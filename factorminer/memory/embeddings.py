@@ -175,7 +175,6 @@ class FormulaEmbedder:
         self._cache[factor_id] = (vec, text)
         self._ids.append(factor_id)
         self._index_dirty = True
-        self._tfidf_dirty = True
         return vec
 
     def remove(self, factor_id: str) -> bool:
@@ -312,23 +311,45 @@ class FormulaEmbedder:
         query_idx = len(corpus)
         corpus.append(text)
 
-        # Always refit because vocab may have grown
-        matrix = self._tfidf.fit_transform(corpus)
-        vec = np.asarray(matrix[query_idx].toarray(), dtype=np.float32).flatten()
+        # ⚡ Bolt Optimization:
+        # Check if the incoming query text introduces any new vocabulary.
+        # If it does not, we can avoid the expensive O(N) refit and cache re-encode,
+        # which eliminates an O(N^2) bottleneck during sequential factor appends.
+        analyzer = self._tfidf.build_analyzer()
+        tokens = analyzer(text)
 
-        # Re-encode cached entries with updated vocab
-        for i, fid in enumerate(self._ids):
-            updated = np.asarray(matrix[i].toarray(), dtype=np.float32).flatten()
-            norm = np.linalg.norm(updated)
-            if norm > 0:
-                updated /= norm
-            self._cache[fid] = (updated, self._cache[fid][1])
+        needs_refit = self._tfidf_dirty
+        if not needs_refit:
+            if not hasattr(self._tfidf, "vocabulary_"):
+                needs_refit = True
+            else:
+                for token in tokens:
+                    if token not in self._tfidf.vocabulary_:
+                        needs_refit = True
+                        break
+
+        if needs_refit:
+            matrix = self._tfidf.fit_transform(corpus)
+            vec = np.asarray(matrix[query_idx].toarray(), dtype=np.float32).flatten()
+
+            # Re-encode cached entries with updated vocab
+            for i, fid in enumerate(self._ids):
+                updated = np.asarray(matrix[i].toarray(), dtype=np.float32).flatten()
+                norm = np.linalg.norm(updated)
+                if norm > 0:
+                    updated /= norm
+                self._cache[fid] = (updated, self._cache[fid][1])
+            self._tfidf_dirty = False
+            self._index_dirty = True
+        else:
+            # Vocabulary hasn't changed; simply transform the new text.
+            matrix = self._tfidf.transform([text])
+            vec = np.asarray(matrix[0].toarray(), dtype=np.float32).flatten()
 
         norm = np.linalg.norm(vec)
         if norm > 0:
             vec /= norm
-        self._tfidf_dirty = False
-        self._index_dirty = True
+
         return vec
 
     @staticmethod
