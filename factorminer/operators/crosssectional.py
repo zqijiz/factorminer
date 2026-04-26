@@ -23,16 +23,17 @@ def cs_rank_np(x: np.ndarray) -> np.ndarray:
 
     For each time step, rank assets from 0 to 1.  NaN inputs get NaN rank.
     """
-    M, T = x.shape
-    out = np.full_like(x, np.nan, dtype=np.float64)
-    for t in range(T):
-        col = x[:, t]
-        valid = ~np.isnan(col)
-        n = valid.sum()
-        if n < 2:
-            continue
-        order = col[valid].argsort().argsort().astype(np.float64)
-        out[valid, t] = order / (n - 1)
+    valid_counts = np.sum(~np.isnan(x), axis=0)
+
+    # x.argsort(axis=0).argsort(axis=0) natively replicates the tie-breaking behavior
+    # and sorts NaNs to the end, making it perfectly aligned and pure NumPy.
+    order = x.argsort(axis=0).argsort(axis=0).astype(np.float64)
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        out = order / (valid_counts - 1)
+
+    out[:, valid_counts < 2] = np.nan
+    out[np.isnan(x)] = np.nan
     return out
 
 
@@ -64,16 +65,17 @@ def cs_neutralize_np(x: np.ndarray) -> np.ndarray:
 def cs_quantile_np(x: np.ndarray, n_bins: int = 5) -> np.ndarray:
     """Assign each asset to a quantile bin (0 .. n_bins-1) cross-sectionally."""
     n_bins = int(n_bins)
-    M, T = x.shape
-    out = np.full_like(x, np.nan, dtype=np.float64)
-    for t in range(T):
-        col = x[:, t]
-        valid = ~np.isnan(col)
-        n = valid.sum()
-        if n < 2:
-            continue
-        order = col[valid].argsort().argsort().astype(np.float64)
-        out[valid, t] = np.floor(order / n * n_bins).clip(0, n_bins - 1)
+    valid_counts = np.sum(~np.isnan(x), axis=0)
+
+    # x.argsort(axis=0).argsort(axis=0) natively replicates the tie-breaking behavior
+    # and sorts NaNs to the end, making it perfectly aligned and pure NumPy.
+    order = x.argsort(axis=0).argsort(axis=0).astype(np.float64)
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        out = np.floor(order / valid_counts * n_bins).clip(0, n_bins - 1)
+
+    out[:, valid_counts < 2] = np.nan
+    out[np.isnan(x)] = np.nan
     return out
 
 
