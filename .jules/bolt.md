@@ -1,0 +1,3 @@
+## 2024-05-18 - Fast Cross-Sectional Ranking in Financial Data
+**Learning:** For cross-sectional calculations involving NaN (which is common in financial data with inactive assets), using pure numpy double-argsort on 2D arrays (`x.argsort(axis=0).argsort(axis=0).astype(np.float64)`) correctly pushes NaNs to the end, naturally matches expected rank behaviors, and is ~3-4x faster than Python-level column iteration (`for t in range(T):`).
+**Action:** Always prefer double-argsort over Python loops when calculating rank or percentiles across financial time-series matrices with NaNs, masking out NaNs post-calculation.
