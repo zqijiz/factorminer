@@ -23,17 +23,21 @@ def cs_rank_np(x: np.ndarray) -> np.ndarray:
 
     For each time step, rank assets from 0 to 1.  NaN inputs get NaN rank.
     """
-    M, T = x.shape
-    out = np.full_like(x, np.nan, dtype=np.float64)
-    for t in range(T):
-        col = x[:, t]
-        valid = ~np.isnan(col)
-        n = valid.sum()
-        if n < 2:
-            continue
-        order = col[valid].argsort().argsort().astype(np.float64)
-        out[valid, t] = order / (n - 1)
-    return out
+    valid_counts = (~np.isnan(x)).sum(axis=0)
+
+    # NaNs are sorted to the end by argsort
+    ranks = x.argsort(axis=0).argsort(axis=0).astype(np.float64)
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        result = ranks / (valid_counts - 1)
+
+    # Set NaNs back to NaN
+    result[np.isnan(x)] = np.nan
+
+    # Set columns with < 2 valid items to NaN
+    result[:, valid_counts < 2] = np.nan
+
+    return result
 
 
 def cs_zscore_np(x: np.ndarray) -> np.ndarray:
@@ -64,17 +68,17 @@ def cs_neutralize_np(x: np.ndarray) -> np.ndarray:
 def cs_quantile_np(x: np.ndarray, n_bins: int = 5) -> np.ndarray:
     """Assign each asset to a quantile bin (0 .. n_bins-1) cross-sectionally."""
     n_bins = int(n_bins)
-    M, T = x.shape
-    out = np.full_like(x, np.nan, dtype=np.float64)
-    for t in range(T):
-        col = x[:, t]
-        valid = ~np.isnan(col)
-        n = valid.sum()
-        if n < 2:
-            continue
-        order = col[valid].argsort().argsort().astype(np.float64)
-        out[valid, t] = np.floor(order / n * n_bins).clip(0, n_bins - 1)
-    return out
+    valid_counts = (~np.isnan(x)).sum(axis=0)
+
+    ranks = x.argsort(axis=0).argsort(axis=0).astype(np.float64)
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        result = np.floor(ranks / valid_counts * n_bins).clip(0, n_bins - 1)
+
+    result[np.isnan(x)] = np.nan
+    result[:, valid_counts < 2] = np.nan
+
+    return result
 
 
 # ===========================================================================
