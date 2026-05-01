@@ -19,21 +19,24 @@ except ImportError:
 # ===========================================================================
 
 def cs_rank_np(x: np.ndarray) -> np.ndarray:
-    """Cross-sectional percentile rank -- key GPU target (26x speedup).
+    """Cross-sectional percentile rank -- fully vectorized for CPU.
 
-    For each time step, rank assets from 0 to 1.  NaN inputs get NaN rank.
+    For each time step, rank assets from 0 to 1. NaN inputs get NaN rank.
+    Avoids Python loop by using pure numpy argsort.
     """
-    M, T = x.shape
-    out = np.full_like(x, np.nan, dtype=np.float64)
-    for t in range(T):
-        col = x[:, t]
-        valid = ~np.isnan(col)
-        n = valid.sum()
-        if n < 2:
-            continue
-        order = col[valid].argsort().argsort().astype(np.float64)
-        out[valid, t] = order / (n - 1)
-    return out
+    valid = ~np.isnan(x)
+    n = valid.sum(axis=0)
+
+    # NaN elements sort to the end natively in np.argsort
+    ranks = x.argsort(axis=0).argsort(axis=0).astype(np.float64)
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        result = ranks / (n - 1)
+
+    result[~valid] = np.nan
+    result[:, n < 2] = np.nan
+
+    return result
 
 
 def cs_zscore_np(x: np.ndarray) -> np.ndarray:
@@ -62,19 +65,22 @@ def cs_neutralize_np(x: np.ndarray) -> np.ndarray:
 
 
 def cs_quantile_np(x: np.ndarray, n_bins: int = 5) -> np.ndarray:
-    """Assign each asset to a quantile bin (0 .. n_bins-1) cross-sectionally."""
+    """Assign each asset to a quantile bin (0 .. n_bins-1) cross-sectionally.
+    Fully vectorized.
+    """
     n_bins = int(n_bins)
-    M, T = x.shape
-    out = np.full_like(x, np.nan, dtype=np.float64)
-    for t in range(T):
-        col = x[:, t]
-        valid = ~np.isnan(col)
-        n = valid.sum()
-        if n < 2:
-            continue
-        order = col[valid].argsort().argsort().astype(np.float64)
-        out[valid, t] = np.floor(order / n * n_bins).clip(0, n_bins - 1)
-    return out
+    valid = ~np.isnan(x)
+    n = valid.sum(axis=0)
+
+    ranks = x.argsort(axis=0).argsort(axis=0).astype(np.float64)
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        result = np.floor(ranks / n * n_bins).clip(0, n_bins - 1)
+
+    result[~valid] = np.nan
+    result[:, n < 2] = np.nan
+
+    return result
 
 
 # ===========================================================================
