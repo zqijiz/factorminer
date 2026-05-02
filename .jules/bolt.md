@@ -1,0 +1,3 @@
+## 2024-05-02 - Vectorize Cross-Sectional Ranking in NumPy
+**Learning:** Cross-sectional financial time-series ranking and quantile binning in factorminer is optimally vectorized using pure numpy `x.argsort(axis=0).argsort(axis=0).astype(np.float64)` rather than iterating through columns manually. This approach correctly handles required tie-breaking behavior, accurately sorts NaNs to the end without special pre-processing, and is faster across most common multi-column tensor shapes.
+**Action:** When implementing new cross-sectional operators or fixing existing ones, look for opportunities to replace Python loops across columns with fully vectorized operations over the `axis=0` dimension while handling NaN validity masks correctly.
