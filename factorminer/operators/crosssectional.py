@@ -23,16 +23,20 @@ def cs_rank_np(x: np.ndarray) -> np.ndarray:
 
     For each time step, rank assets from 0 to 1.  NaN inputs get NaN rank.
     """
-    M, T = x.shape
-    out = np.full_like(x, np.nan, dtype=np.float64)
-    for t in range(T):
-        col = x[:, t]
-        valid = ~np.isnan(col)
-        n = valid.sum()
-        if n < 2:
-            continue
-        order = col[valid].argsort().argsort().astype(np.float64)
-        out[valid, t] = order / (n - 1)
+    # ⚡ Bolt Optimization: Vectorize using argsort(axis=0).argsort(axis=0)
+    # This avoids python-level iteration over time steps (T) and is significantly faster,
+    # natively replicates required tie-breaking behavior, correctly sorts NaNs to the end,
+    # and avoids introducing unnecessary dependencies like scipy.stats.rankdata.
+    valid = ~np.isnan(x)
+    valid_counts = valid.sum(axis=0)
+
+    order = x.argsort(axis=0).argsort(axis=0).astype(np.float64)
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        out = order / (valid_counts - 1)
+
+    out[~valid] = np.nan
+    out[:, valid_counts < 2] = np.nan
     return out
 
 
@@ -64,16 +68,20 @@ def cs_neutralize_np(x: np.ndarray) -> np.ndarray:
 def cs_quantile_np(x: np.ndarray, n_bins: int = 5) -> np.ndarray:
     """Assign each asset to a quantile bin (0 .. n_bins-1) cross-sectionally."""
     n_bins = int(n_bins)
-    M, T = x.shape
-    out = np.full_like(x, np.nan, dtype=np.float64)
-    for t in range(T):
-        col = x[:, t]
-        valid = ~np.isnan(col)
-        n = valid.sum()
-        if n < 2:
-            continue
-        order = col[valid].argsort().argsort().astype(np.float64)
-        out[valid, t] = np.floor(order / n * n_bins).clip(0, n_bins - 1)
+
+    # ⚡ Bolt Optimization: Vectorize using argsort(axis=0).argsort(axis=0)
+    # Similar to cs_rank_np, avoiding Python loops across columns is significantly
+    # faster and leverages pure NumPy vectorization perfectly for ordinal ranking.
+    valid = ~np.isnan(x)
+    valid_counts = valid.sum(axis=0)
+
+    order = x.argsort(axis=0).argsort(axis=0).astype(np.float64)
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        out = np.floor(order / valid_counts * n_bins).clip(0, n_bins - 1)
+
+    out[~valid] = np.nan
+    out[:, valid_counts < 2] = np.nan
     return out
 
 
