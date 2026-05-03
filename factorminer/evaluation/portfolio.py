@@ -60,23 +60,39 @@ class PortfolioBacktester:
         T, N = combined_signal.shape
         cost_frac = transaction_cost_bps / 10000.0
 
+        from scipy.stats import rankdata
+        # Vectorized ranking for quintiles
+        valid = np.isfinite(combined_signal) & np.isfinite(returns)
+        valid_counts = valid.sum(axis=1)
+
+        # Set invalid signals to nan so they are omitted
+        signal_clean = np.where(valid, combined_signal, np.nan)
+
+        # Use scipy.stats.rankdata to correctly handle ties with average ranks across the 2D array
+        ranks = rankdata(signal_clean, method='average', axis=1, nan_policy='omit')
+
+        with np.errstate(divide='ignore', invalid='ignore'):
+            denoms = (valid_counts - 1).astype(np.float64)
+            # Normalizing ranks to [0, 1]. For rows with < 2 items, it sets to np.nan
+            ranks_norm = np.where(valid_counts[:, None] > 1, (ranks - 1.0) / denoms[:, None], np.nan)
+
         # Per-period quintile returns
         quintile_returns = np.full((T, 5), np.nan)
         for t in range(T):
-            sig_t = combined_signal[t]
-            ret_t = returns[t]
-            valid = np.isfinite(sig_t) & np.isfinite(ret_t)
-            n_valid = valid.sum()
-            if n_valid < 5:
+            if valid_counts[t] < 5:
                 continue
-            ranks = _rank_array(sig_t[valid])
+
+            r_t = ranks_norm[t]
+            v_mask = valid[t]
+            ret_t = returns[t]
+
             boundaries = np.linspace(0, 1, 6)
             for q in range(5):
-                mask = (ranks >= boundaries[q]) & (ranks < boundaries[q + 1])
+                mask = v_mask & (r_t >= boundaries[q]) & (r_t < boundaries[q + 1])
                 if q == 4:
-                    mask = (ranks >= boundaries[q]) & (ranks <= boundaries[q + 1])
+                    mask = v_mask & (r_t >= boundaries[q]) & (r_t <= boundaries[q + 1])
                 if mask.sum() > 0:
-                    quintile_returns[t, q] = np.mean(ret_t[valid][mask])
+                    quintile_returns[t, q] = np.mean(ret_t[mask])
 
         # Turnover for cost adjustment
         turnover = self.compute_turnover(combined_signal, top_fraction=0.2)
@@ -235,30 +251,3 @@ class PortfolioBacktester:
         return turnover
 
 
-# ------------------------------------------------------------------
-# Module-level helpers
-# ------------------------------------------------------------------
-
-def _rank_array(x: np.ndarray) -> np.ndarray:
-    """Compute percentile ranks in [0, 1] for a 1-D array.
-
-    Ties receive the average rank.
-    """
-    n = len(x)
-    if n == 0:
-        return x.copy()
-    order = x.argsort()
-    ranks = np.empty(n, dtype=np.float64)
-    ranks[order] = np.arange(n, dtype=np.float64)
-    # Handle ties by averaging
-    sorted_x = x[order]
-    i = 0
-    while i < n:
-        j = i
-        while j < n and sorted_x[j] == sorted_x[i]:
-            j += 1
-        avg_rank = (i + j - 1) / 2.0
-        for k in range(i, j):
-            ranks[order[k]] = avg_rank
-        i = j
-    return ranks / max(n - 1, 1)
