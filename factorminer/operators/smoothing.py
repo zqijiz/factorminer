@@ -23,18 +23,17 @@ def sma_np(x: np.ndarray, window: int = 10) -> np.ndarray:
     window = int(window)
     M, T = x.shape
     out = np.full_like(x, np.nan, dtype=np.float64)
+    if window > T:
+        return out
+
     # Cumsum trick for O(1) per element
     cs = np.nancumsum(x, axis=1)
-    out[:, window - 1:] = cs[:, window - 1:]
-    if window > 1:
-        out[:, window - 1:] -= np.concatenate(
-            [np.zeros((M, 1), dtype=np.float64), cs[:, :-window]], axis=1
-        )[:, :T - window + 1]  # fix: just subtract shifted cumsum
-        out[:, window - 1:] = (cs[:, window - 1:] - np.concatenate(
-            [np.zeros((M, 1), dtype=np.float64), cs[:, :-1]], axis=1
-        )[:, :T - window + 1])
-    out[:, window - 1:] /= window
-    out[:, :window - 1] = np.nan
+
+    # Avoid concatenate: slice the cumulative sums directly
+    out[:, window - 1] = cs[:, window - 1] / window
+    if window < T:
+        out[:, window:] = (cs[:, window:] - cs[:, :-window]) / window
+
     return out
 
 
