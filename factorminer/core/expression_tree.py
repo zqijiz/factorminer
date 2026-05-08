@@ -320,7 +320,8 @@ def _ts_kurt(sx: np.ndarray) -> np.ndarray:
 def _ts_rank(sx: np.ndarray) -> np.ndarray:
     """Percentile rank of the latest value within the window."""
     latest = sx[:, -1]
-    rank = np.sum(sx <= latest[:, None], axis=1).astype(np.float64)
+    # Optimize: np.sum(bool, dtype=np.float64) is faster than .astype(np.float64)
+    rank = np.sum(sx <= latest[:, None], axis=1, dtype=np.float64)
     return rank / sx.shape[1]
 
 
@@ -553,11 +554,11 @@ def _dispatch_operator(
         )
     if name == "CountNaN":
         return _rolling_apply(
-            children[0], w, lambda sx: np.sum(np.isnan(sx), axis=1).astype(np.float64)
+            children[0], w, lambda sx: np.sum(np.isnan(sx), axis=1, dtype=np.float64)
         )
     if name == "CountNotNaN":
         return _rolling_apply(
-            children[0], w, lambda sx: np.sum(~np.isnan(sx), axis=1).astype(np.float64)
+            children[0], w, lambda sx: np.sum(~np.isnan(sx), axis=1, dtype=np.float64)
         )
 
     # -- Time-series --------------------------------------------------------

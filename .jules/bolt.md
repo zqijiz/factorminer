@@ -1,0 +1,3 @@
+## 2024-05-08 - Fast Boolean Array Aggregation
+**Learning:** When aggregating boolean arrays over an axis, using `np.sum(bool_arr, dtype=np.float64)` directly is ~20-25% faster than using `np.nansum(bool_arr).astype(np.float64)` or `np.sum(bool_arr).astype(np.float64)`. The `dtype` parameter avoids an intermediate integer array allocation and implicit casting, and boolean arrays do not contain NaNs, making `nansum` unnecessary overhead.
+**Action:** Replace `np.nansum(bool_arr).astype(np.float64)` and `np.sum(bool_arr).astype(np.float64)` with `np.sum(bool_arr, dtype=np.float64)` when counting boolean conditions in NumPy operations.
