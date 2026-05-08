@@ -95,7 +95,8 @@ def skew_np(x: np.ndarray, window: int = 20) -> np.ndarray:
         return np.full_like(x, np.nan)
     m = np.nanmean(w, axis=2, keepdims=True)
     d = w - m
-    np.sum(~np.isnan(w), axis=2, keepdims=True).astype(np.float64)
+    # Optimize: np.sum(bool, dtype=np.float64) is faster than .astype(np.float64)
+    np.sum(~np.isnan(w), axis=2, keepdims=True, dtype=np.float64)
     m2 = np.nanmean(d ** 2, axis=2, keepdims=True)
     m3 = np.nanmean(d ** 3, axis=2, keepdims=True)
     with np.errstate(invalid="ignore", divide="ignore"):
@@ -203,8 +204,9 @@ def ts_rank_np(x: np.ndarray, window: int = 10) -> np.ndarray:
     if w is None:
         return np.full_like(x, np.nan)
     latest = w[:, :, -1:]  # (M, T-w+1, 1)
-    count_less = np.nansum(w < latest, axis=2).astype(np.float64)
-    count_valid = np.sum(~np.isnan(w), axis=2).astype(np.float64)
+    # Optimize: np.sum(bool, dtype=np.float64) is faster than np.nansum + .astype
+    count_less = np.sum(w < latest, axis=2, dtype=np.float64)
+    count_valid = np.sum(~np.isnan(w), axis=2, dtype=np.float64)
     with np.errstate(invalid="ignore", divide="ignore"):
         result = count_less / (count_valid - 1.0)
     result[count_valid <= 1] = np.nan
@@ -227,7 +229,8 @@ def count_nan_np(x: np.ndarray, window: int = 10) -> np.ndarray:
     w = _rolling_np(x, window)
     if w is None:
         return np.full_like(x, np.nan)
-    result = np.sum(np.isnan(w), axis=2).astype(np.float64)
+    # Optimize: np.sum(bool, dtype=np.float64) is faster than .astype(np.float64)
+    result = np.sum(np.isnan(w), axis=2, dtype=np.float64)
     return _pad_front(result, window, T)
 
 
@@ -237,7 +240,8 @@ def count_not_nan_np(x: np.ndarray, window: int = 10) -> np.ndarray:
     w = _rolling_np(x, window)
     if w is None:
         return np.full_like(x, np.nan)
-    result = np.sum(~np.isnan(w), axis=2).astype(np.float64)
+    # Optimize: np.sum(bool, dtype=np.float64) is faster than .astype(np.float64)
+    result = np.sum(~np.isnan(w), axis=2, dtype=np.float64)
     return _pad_front(result, window, T)
 
 
