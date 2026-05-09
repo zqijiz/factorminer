@@ -7,6 +7,7 @@ Operations are performed along axis=0 (the asset dimension) for every column.
 from __future__ import annotations
 
 import numpy as np
+import scipy.stats
 
 try:
     import torch
@@ -23,17 +24,15 @@ def cs_rank_np(x: np.ndarray) -> np.ndarray:
 
     For each time step, rank assets from 0 to 1.  NaN inputs get NaN rank.
     """
-    M, T = x.shape
-    out = np.full_like(x, np.nan, dtype=np.float64)
-    for t in range(T):
-        col = x[:, t]
-        valid = ~np.isnan(col)
-        n = valid.sum()
-        if n < 2:
-            continue
-        order = col[valid].argsort().argsort().astype(np.float64)
-        out[valid, t] = order / (n - 1)
-    return out
+    # Performance & Correctness Optimization:
+    # Use scipy.stats.rankdata along axis=0 instead of looping over columns and using argsort().argsort().
+    # This is not only faster due to vectorization, but mathematically correct as average ranks are assigned to tied values.
+    valid_counts = np.sum(~np.isnan(x), axis=0)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        result = (scipy.stats.rankdata(x, method='average', axis=0, nan_policy='omit') - 1.0) / (valid_counts - 1.0)
+    # Mask out cases where valid_counts < 2
+    result[:, valid_counts < 2] = np.nan
+    return result
 
 
 def cs_zscore_np(x: np.ndarray) -> np.ndarray:
