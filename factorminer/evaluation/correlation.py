@@ -26,15 +26,7 @@ def _rank_columns(x: np.ndarray) -> np.ndarray:
     np.ndarray, shape (M, T)
         Ranks per column, NaN where input was NaN.
     """
-    M, T = x.shape
-    ranked = np.full_like(x, np.nan, dtype=np.float64)
-    for t in range(T):
-        col = x[:, t]
-        valid = ~np.isnan(col)
-        if valid.sum() < 2:
-            continue
-        ranked[valid, t] = rankdata(col[valid])
-    return ranked
+    return rankdata(x, method='average', axis=0, nan_policy='omit')
 
 
 def batch_spearman_correlation(
@@ -62,33 +54,42 @@ def batch_spearman_correlation(
     if N == 0:
         return np.array([], dtype=np.float64)
 
-    M, T = candidate_signals.shape
-    correlations = np.zeros(N, dtype=np.float64)
-
-    # Rank candidate columns once
+    # Rank candidate once
     cand_ranked = _rank_columns(candidate_signals)
 
+    correlations = np.zeros(N, dtype=np.float64)
+
     for i in range(N):
-        lib_ranked = _rank_columns(library_signals[i])
-        corr_sum = 0.0
-        count = 0
-        for t in range(T):
-            cr = cand_ranked[:, t]
-            lr = lib_ranked[:, t]
-            valid = ~(np.isnan(cr) | np.isnan(lr))
-            n = valid.sum()
-            if n < 5:
-                continue
-            cr_v = cr[valid]
-            lr_v = lr[valid]
-            cr_m = cr_v - cr_v.mean()
-            lr_m = lr_v - lr_v.mean()
-            denom = np.sqrt((cr_m ** 2).sum() * (lr_m ** 2).sum())
-            if denom > 1e-12:
-                corr_sum += (cr_m * lr_m).sum() / denom
-            count += 1
-        if count > 0:
-            correlations[i] = corr_sum / count
+        cr = cand_ranked
+        lr = _rank_columns(library_signals[i])
+
+        valid = ~(np.isnan(cr) | np.isnan(lr))
+
+        cr_masked = np.where(valid, cr, np.nan)
+        lr_masked = np.where(valid, lr, np.nan)
+
+        cr_mean = np.nanmean(cr_masked, axis=0)
+        lr_mean = np.nanmean(lr_masked, axis=0)
+
+        cr_m = cr_masked - cr_mean
+        lr_m = lr_masked - lr_mean
+
+        cov = np.nansum(cr_m * lr_m, axis=0)
+        var_c = np.nansum(cr_m**2, axis=0)
+        var_l = np.nansum(lr_m**2, axis=0)
+
+        denom = np.sqrt(var_c * var_l)
+
+        with np.errstate(divide='ignore', invalid='ignore'):
+            corr_t = cov / denom
+
+        valid_count = valid.sum(axis=0)
+        corr_t[denom < 1e-12] = 0.0
+        corr_t[valid_count < 5] = np.nan
+
+        correlations[i] = np.nanmean(corr_t)
+        if np.isnan(correlations[i]):
+            correlations[i] = 0.0
 
     return correlations
 
@@ -112,8 +113,6 @@ def batch_spearman_pairwise(
     if K == 0:
         return np.array([], dtype=np.float64).reshape(0, 0)
 
-    M, T = signals_list[0].shape
-
     # Pre-compute ranks for all candidates
     ranked_list = [_rank_columns(s) for s in signals_list]
 
@@ -121,26 +120,37 @@ def batch_spearman_pairwise(
 
     for i in range(K):
         for j in range(i + 1, K):
-            corr_sum = 0.0
-            count = 0
-            for t in range(T):
-                ri = ranked_list[i][:, t]
-                rj = ranked_list[j][:, t]
-                valid = ~(np.isnan(ri) | np.isnan(rj))
-                n = valid.sum()
-                if n < 5:
-                    continue
-                ri_v = ri[valid]
-                rj_v = rj[valid]
-                ri_m = ri_v - ri_v.mean()
-                rj_m = rj_v - rj_v.mean()
-                denom = np.sqrt((ri_m ** 2).sum() * (rj_m ** 2).sum())
-                if denom > 1e-12:
-                    corr_sum += (ri_m * rj_m).sum() / denom
-                count += 1
-            if count > 0:
-                corr_matrix[i, j] = corr_sum / count
-                corr_matrix[j, i] = corr_matrix[i, j]
+            ri = ranked_list[i]
+            rj = ranked_list[j]
+
+            valid = ~(np.isnan(ri) | np.isnan(rj))
+
+            ri_masked = np.where(valid, ri, np.nan)
+            rj_masked = np.where(valid, rj, np.nan)
+
+            ri_mean = np.nanmean(ri_masked, axis=0)
+            rj_mean = np.nanmean(rj_masked, axis=0)
+
+            ri_m = ri_masked - ri_mean
+            rj_m = rj_masked - rj_mean
+
+            cov = np.nansum(ri_m * rj_m, axis=0)
+            var_i = np.nansum(ri_m**2, axis=0)
+            var_j = np.nansum(rj_m**2, axis=0)
+
+            denom = np.sqrt(var_i * var_j)
+
+            with np.errstate(divide='ignore', invalid='ignore'):
+                corr_t = cov / denom
+
+            valid_count = valid.sum(axis=0)
+            corr_t[denom < 1e-12] = 0.0
+            corr_t[valid_count < 5] = np.nan
+
+            mean_corr = np.nanmean(corr_t)
+            if not np.isnan(mean_corr):
+                corr_matrix[i, j] = mean_corr
+                corr_matrix[j, i] = mean_corr
 
     return corr_matrix
 
@@ -174,25 +184,33 @@ class IncrementalCorrelationMatrix:
         """Compute average cross-sectional Spearman between two factors."""
         ra = self._ranked[id_a]
         rb = self._ranked[id_b]
-        M, T = ra.shape
-        corr_sum = 0.0
-        count = 0
-        for t in range(T):
-            a_col = ra[:, t]
-            b_col = rb[:, t]
-            valid = ~(np.isnan(a_col) | np.isnan(b_col))
-            n = valid.sum()
-            if n < 5:
-                continue
-            a_v = a_col[valid]
-            b_v = b_col[valid]
-            a_m = a_v - a_v.mean()
-            b_m = b_v - b_v.mean()
-            denom = np.sqrt((a_m ** 2).sum() * (b_m ** 2).sum())
-            if denom > 1e-12:
-                corr_sum += (a_m * b_m).sum() / denom
-            count += 1
-        return corr_sum / count if count > 0 else 0.0
+
+        valid = ~(np.isnan(ra) | np.isnan(rb))
+
+        ra_masked = np.where(valid, ra, np.nan)
+        rb_masked = np.where(valid, rb, np.nan)
+
+        ra_mean = np.nanmean(ra_masked, axis=0)
+        rb_mean = np.nanmean(rb_masked, axis=0)
+
+        ra_m = ra_masked - ra_mean
+        rb_m = rb_masked - rb_mean
+
+        cov = np.nansum(ra_m * rb_m, axis=0)
+        var_a = np.nansum(ra_m**2, axis=0)
+        var_b = np.nansum(rb_m**2, axis=0)
+
+        denom = np.sqrt(var_a * var_b)
+
+        with np.errstate(divide='ignore', invalid='ignore'):
+            corr_t = cov / denom
+
+        valid_count = valid.sum(axis=0)
+        corr_t[denom < 1e-12] = 0.0
+        corr_t[valid_count < 5] = np.nan
+
+        mean_corr = np.nanmean(corr_t)
+        return float(mean_corr) if not np.isnan(mean_corr) else 0.0
 
     def add_factor(self, factor_id: str, signals: np.ndarray) -> dict[str, float]:
         """Add a factor and compute its correlation with all existing factors.

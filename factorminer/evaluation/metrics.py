@@ -32,26 +32,34 @@ def compute_ic(signals: np.ndarray, returns: np.ndarray) -> np.ndarray:
         Spearman rank correlation per period.  NaN where fewer than 5
         valid (non-NaN) asset pairs exist.
     """
-    M, T = signals.shape
-    ic_series = np.full(T, np.nan, dtype=np.float64)
+    valid = ~(np.isnan(signals) | np.isnan(returns))
 
-    for t in range(T):
-        s = signals[:, t]
-        r = returns[:, t]
-        valid = ~(np.isnan(s) | np.isnan(r))
-        n = valid.sum()
-        if n < 5:
-            continue
-        rs = rankdata(s[valid])
-        rr = rankdata(r[valid])
-        # Pearson correlation on ranks = Spearman
-        rs_m = rs - rs.mean()
-        rr_m = rr - rr.mean()
-        denom = np.sqrt((rs_m ** 2).sum() * (rr_m ** 2).sum())
-        if denom < 1e-12:
-            ic_series[t] = 0.0
-        else:
-            ic_series[t] = (rs_m * rr_m).sum() / denom
+    # Fill invalid with np.nan for rankdata omit policy
+    s_masked = np.where(valid, signals, np.nan)
+    r_masked = np.where(valid, returns, np.nan)
+
+    # rankdata with omit preserves NaNs, computes rank on valid items
+    rs = rankdata(s_masked, axis=0, nan_policy='omit')
+    rr = rankdata(r_masked, axis=0, nan_policy='omit')
+
+    rs_mean = np.nanmean(rs, axis=0)
+    rr_mean = np.nanmean(rr, axis=0)
+
+    rs_m = rs - rs_mean
+    rr_m = rr - rr_mean
+
+    cov = np.nansum(rs_m * rr_m, axis=0)
+    var_s = np.nansum(rs_m**2, axis=0)
+    var_r = np.nansum(rr_m**2, axis=0)
+
+    denom = np.sqrt(var_s * var_r)
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        ic_series = cov / denom
+
+    valid_count = valid.sum(axis=0)
+    ic_series[denom < 1e-12] = 0.0
+    ic_series[valid_count < 5] = np.nan
 
     return ic_series
 
@@ -71,30 +79,7 @@ def compute_ic_vectorized(signals: np.ndarray, returns: np.ndarray) -> np.ndarra
     -------
     np.ndarray, shape (T,)
     """
-    M, T = signals.shape
-    ic_series = np.full(T, np.nan, dtype=np.float64)
-
-    # Mask invalid entries
-    invalid = np.isnan(signals) | np.isnan(returns)
-
-    # Rank each column independently (replace NaN with very large value to push to end)
-    big = 1e18
-    sig_filled = np.where(invalid, big, signals)
-    ret_filled = np.where(invalid, big, returns)
-
-    for t in range(T):
-        valid = ~invalid[:, t]
-        n = valid.sum()
-        if n < 5:
-            continue
-        rs = rankdata(sig_filled[valid, t])
-        rr = rankdata(ret_filled[valid, t])
-        rs_m = rs - rs.mean()
-        rr_m = rr - rr.mean()
-        denom = np.sqrt((rs_m ** 2).sum() * (rr_m ** 2).sum())
-        ic_series[t] = (rs_m * rr_m).sum() / denom if denom > 1e-12 else 0.0
-
-    return ic_series
+    return compute_ic(signals, returns)
 
 
 # ---------------------------------------------------------------------------
@@ -180,29 +165,37 @@ def compute_pairwise_correlation(
     float
         Average cross-sectional Spearman correlation.
     """
-    M, T = signals_a.shape
-    corrs = []
+    valid = ~(np.isnan(signals_a) | np.isnan(signals_b))
 
-    for t in range(T):
-        a = signals_a[:, t]
-        b = signals_b[:, t]
-        valid = ~(np.isnan(a) | np.isnan(b))
-        n = valid.sum()
-        if n < 5:
-            continue
-        ra = rankdata(a[valid])
-        rb = rankdata(b[valid])
-        ra_m = ra - ra.mean()
-        rb_m = rb - rb.mean()
-        denom = np.sqrt((ra_m ** 2).sum() * (rb_m ** 2).sum())
-        if denom < 1e-12:
-            corrs.append(0.0)
-        else:
-            corrs.append(float((ra_m * rb_m).sum() / denom))
+    a_masked = np.where(valid, signals_a, np.nan)
+    b_masked = np.where(valid, signals_b, np.nan)
 
-    if not corrs:
+    ra = rankdata(a_masked, axis=0, nan_policy='omit')
+    rb = rankdata(b_masked, axis=0, nan_policy='omit')
+
+    ra_mean = np.nanmean(ra, axis=0)
+    rb_mean = np.nanmean(rb, axis=0)
+
+    ra_m = ra - ra_mean
+    rb_m = rb - rb_mean
+
+    cov = np.nansum(ra_m * rb_m, axis=0)
+    var_a = np.nansum(ra_m**2, axis=0)
+    var_b = np.nansum(rb_m**2, axis=0)
+
+    denom = np.sqrt(var_a * var_b)
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        corrs = cov / denom
+
+    valid_count = valid.sum(axis=0)
+    corrs[denom < 1e-12] = 0.0
+    corrs[valid_count < 5] = np.nan
+
+    mean_corr = np.nanmean(corrs)
+    if np.isnan(mean_corr):
         return 0.0
-    return float(np.mean(corrs))
+    return float(mean_corr)
 
 
 # ---------------------------------------------------------------------------
@@ -229,41 +222,39 @@ def compute_quintile_returns(
         Keys: Q1..Q{n}, long_short, monotonicity.
         Q1 is lowest signal quintile, Q{n} is highest.
     """
-    M, T = signals.shape
-    # Accumulate per-quintile return sums
-    quintile_returns = {q: [] for q in range(1, n_quantiles + 1)}
+    valid = ~(np.isnan(signals) | np.isnan(returns))
 
-    for t in range(T):
-        s = signals[:, t]
-        r = returns[:, t]
-        valid = ~(np.isnan(s) | np.isnan(r))
-        n = valid.sum()
-        if n < n_quantiles:
-            continue
-        s_valid = s[valid]
-        r_valid = r[valid]
-        # Assign quintile labels via rank
-        ranks = rankdata(s_valid)
-        # Map to quintile: ceil(rank / n * n_quantiles), clamped
-        q_labels = np.clip(
-            np.ceil(ranks / n * n_quantiles).astype(int),
-            1,
-            n_quantiles,
-        )
-        for q in range(1, n_quantiles + 1):
-            mask = q_labels == q
-            if mask.any():
-                quintile_returns[q].append(float(np.mean(r_valid[mask])))
+    s_masked = np.where(valid, signals, np.nan)
+    r_masked = np.where(valid, returns, np.nan)
 
+    ranks = rankdata(s_masked, axis=0, nan_policy='omit')
+    valid_count = valid.sum(axis=0)
+
+    process_mask = valid_count >= n_quantiles
+
+    means = {q: 0.0 for q in range(1, n_quantiles + 1)}
     result = {}
-    means = {}
+
+    if process_mask.any():
+        q_labels = np.clip(
+            np.ceil(ranks / valid_count * n_quantiles),
+            1,
+            n_quantiles
+        )
+
+        for q in range(1, n_quantiles + 1):
+            q_mask = (q_labels == q) & process_mask
+            if q_mask.any():
+                col_sums = np.nansum(np.where(q_mask, r_masked, np.nan), axis=0)
+                col_counts = np.sum(q_mask, axis=0)
+
+                valid_cols = col_counts > 0
+                if valid_cols.any():
+                    col_means = col_sums[valid_cols] / col_counts[valid_cols]
+                    means[q] = float(np.mean(col_means))
+
     for q in range(1, n_quantiles + 1):
-        key = f"Q{q}"
-        if quintile_returns[q]:
-            means[q] = float(np.mean(quintile_returns[q]))
-        else:
-            means[q] = 0.0
-        result[key] = means[q]
+        result[f"Q{q}"] = means[q]
 
     # Long-short: top quintile minus bottom quintile
     result["long_short"] = means[n_quantiles] - means[1]
