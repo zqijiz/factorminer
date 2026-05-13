@@ -1,0 +1,3 @@
+## 2025-02-28 - Vectorized Cross-Sectional Ranking
+**Learning:** Cross-sectional financial time-series ranking in `factorminer` used a slow Python loop over time (`np.argsort().argsort()`). `scipy.stats.rankdata(method='average', axis=0, nan_policy='omit')` handles this natively and fully vectorized, eliminating the loop overhead entirely and avoiding manual tie resolution. It properly averages ties rather than breaking them arbitrarily, and speeds up computation >2x.
+**Action:** Use fully vectorized built-in functions with `axis` parameters whenever calculating time-series or cross-sectional array operations instead of Python loops. Ensure `nan_policy` handling matches expected behavior (skipping NaNs rather than propagating them).

@@ -12,6 +12,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 
 import numpy as np
+from scipy.stats import rankdata
 
 from factorminer.core.types import (
     FEATURE_SET,
@@ -394,18 +395,11 @@ def _decay(x: np.ndarray, window: int) -> np.ndarray:
 
 def _cs_rank(x: np.ndarray) -> np.ndarray:
     """Cross-sectional percentile rank at each time step."""
-    M, T = x.shape
-    out = np.empty_like(x, dtype=np.float64)
-    for t in range(T):
-        col = x[:, t]
-        valid = ~np.isnan(col)
-        ranked = np.empty(M, dtype=np.float64)
-        ranked[:] = np.nan
-        if valid.any():
-            order = col[valid].argsort().argsort().astype(np.float64)
-            ranked[valid] = (order + 1) / valid.sum()
-        out[:, t] = ranked
-    return out
+    # Performance Pattern: Vectorized scipy.stats.rankdata avoids Python loops over T
+    valid_counts = np.sum(~np.isnan(x), axis=0, dtype=np.float64)
+    ranks = rankdata(x, method='average', axis=0, nan_policy='omit')
+    with np.errstate(divide='ignore', invalid='ignore'):
+        return ranks / valid_counts
 
 
 def _cs_zscore(x: np.ndarray) -> np.ndarray:
