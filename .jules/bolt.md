@@ -1,0 +1,3 @@
+## 2024-05-16 - Vectorize Cross-Sectional Ranking and Batched Time Correlations
+**Learning:** In heavily nested multi-dimensional time series evaluation (Factors K * Assets M * Time T), looping over T in Python to compute cross-sectional metrics creates a severe bottleneck. Furthermore, `np.nan_to_num` is vital to safely bypass `np.nanmean` artifacts without skewing covariances, since setting NaN to 0 ensures sum products ignore omitted data.
+**Action:** When computing cross-sectional correlations over time, always broadcast ranks across factors natively with `scipy.stats.rankdata(..., axis=0, nan_policy='omit')`, then calculate correlations by treating the entire time series array `T` as batched cross-sections instead of using an outer `for t in range(T)` block.
