@@ -7,7 +7,7 @@ transaction cost pressure testing, following the FactorMiner paper methodology.
 from __future__ import annotations
 
 import numpy as np
-from scipy.stats import spearmanr
+from scipy.stats import rankdata, spearmanr
 
 
 class PortfolioBacktester:
@@ -243,22 +243,12 @@ def _rank_array(x: np.ndarray) -> np.ndarray:
     """Compute percentile ranks in [0, 1] for a 1-D array.
 
     Ties receive the average rank.
+    Uses scipy.stats.rankdata for performance.
     """
     n = len(x)
-    if n == 0:
-        return x.copy()
-    order = x.argsort()
-    ranks = np.empty(n, dtype=np.float64)
-    ranks[order] = np.arange(n, dtype=np.float64)
-    # Handle ties by averaging
-    sorted_x = x[order]
-    i = 0
-    while i < n:
-        j = i
-        while j < n and sorted_x[j] == sorted_x[i]:
-            j += 1
-        avg_rank = (i + j - 1) / 2.0
-        for k in range(i, j):
-            ranks[order[k]] = avg_rank
-        i = j
-    return ranks / max(n - 1, 1)
+    if n < 2:
+        return np.zeros(n, dtype=np.float64) if n > 0 else x.copy()
+
+    # rankdata(method='average') returns 1-based ranks (1 to n)
+    # We subtract 1.0 to get 0-based ranks, then divide by (n - 1)
+    return (rankdata(x, method="average") - 1.0) / (n - 1)
