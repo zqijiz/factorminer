@@ -18,6 +18,7 @@ def compute_ic(signals: np.ndarray, returns: np.ndarray) -> np.ndarray:
     """Compute IC_t = Corr_rank(s_t, r_{t+1}) for each time period.
 
     Uses Spearman rank correlation computed cross-sectionally at each t.
+    Fully vectorized across the time dimension for optimal performance.
 
     Parameters
     ----------
@@ -32,26 +33,35 @@ def compute_ic(signals: np.ndarray, returns: np.ndarray) -> np.ndarray:
         Spearman rank correlation per period.  NaN where fewer than 5
         valid (non-NaN) asset pairs exist.
     """
-    M, T = signals.shape
-    ic_series = np.full(T, np.nan, dtype=np.float64)
+    invalid = np.isnan(signals) | np.isnan(returns)
+    valid_count = (~invalid).sum(axis=0)
 
-    for t in range(T):
-        s = signals[:, t]
-        r = returns[:, t]
-        valid = ~(np.isnan(s) | np.isnan(r))
-        n = valid.sum()
-        if n < 5:
-            continue
-        rs = rankdata(s[valid])
-        rr = rankdata(r[valid])
-        # Pearson correlation on ranks = Spearman
-        rs_m = rs - rs.mean()
-        rr_m = rr - rr.mean()
-        denom = np.sqrt((rs_m ** 2).sum() * (rr_m ** 2).sum())
-        if denom < 1e-12:
-            ic_series[t] = 0.0
-        else:
-            ic_series[t] = (rs_m * rr_m).sum() / denom
+    s_masked = np.where(invalid, np.nan, signals)
+    r_masked = np.where(invalid, np.nan, returns)
+
+    rs = rankdata(s_masked, axis=0, nan_policy='omit')
+    rr = rankdata(r_masked, axis=0, nan_policy='omit')
+
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        rs_mean = np.nanmean(rs, axis=0)
+        rr_mean = np.nanmean(rr, axis=0)
+
+    rs_m = rs - rs_mean
+    rr_m = rr - rr_mean
+
+    denom = np.sqrt(np.nansum(rs_m ** 2, axis=0) * np.nansum(rr_m ** 2, axis=0))
+
+    ic_series = np.divide(
+        np.nansum(rs_m * rr_m, axis=0),
+        denom,
+        out=np.zeros_like(denom),
+        where=denom > 1e-12
+    )
+
+    # Safe conditional fill: scalar numeric fills before NaN masking
+    ic_series[valid_count < 5] = np.nan
 
     return ic_series
 
@@ -169,6 +179,7 @@ def compute_pairwise_correlation(
     """Time-averaged cross-sectional Spearman correlation between two factors.
 
     rho(a, b) = (1/|T|) * sum_t Corr_rank(s_t^a, s_t^b)
+    Fully vectorized across the time dimension for optimal performance.
 
     Parameters
     ----------
@@ -180,29 +191,38 @@ def compute_pairwise_correlation(
     float
         Average cross-sectional Spearman correlation.
     """
-    M, T = signals_a.shape
-    corrs = []
+    invalid = np.isnan(signals_a) | np.isnan(signals_b)
+    valid_count = (~invalid).sum(axis=0)
 
-    for t in range(T):
-        a = signals_a[:, t]
-        b = signals_b[:, t]
-        valid = ~(np.isnan(a) | np.isnan(b))
-        n = valid.sum()
-        if n < 5:
-            continue
-        ra = rankdata(a[valid])
-        rb = rankdata(b[valid])
-        ra_m = ra - ra.mean()
-        rb_m = rb - rb.mean()
-        denom = np.sqrt((ra_m ** 2).sum() * (rb_m ** 2).sum())
-        if denom < 1e-12:
-            corrs.append(0.0)
-        else:
-            corrs.append(float((ra_m * rb_m).sum() / denom))
+    a_masked = np.where(invalid, np.nan, signals_a)
+    b_masked = np.where(invalid, np.nan, signals_b)
 
-    if not corrs:
+    ra = rankdata(a_masked, axis=0, nan_policy='omit')
+    rb = rankdata(b_masked, axis=0, nan_policy='omit')
+
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        ra_mean = np.nanmean(ra, axis=0)
+        rb_mean = np.nanmean(rb, axis=0)
+
+    ra_m = ra - ra_mean
+    rb_m = rb - rb_mean
+
+    denom = np.sqrt(np.nansum(ra_m ** 2, axis=0) * np.nansum(rb_m ** 2, axis=0))
+
+    corrs = np.divide(
+        np.nansum(ra_m * rb_m, axis=0),
+        denom,
+        out=np.zeros_like(denom),
+        where=denom > 1e-12
+    )
+
+    valid_mask = valid_count >= 5
+    if not np.any(valid_mask):
         return 0.0
-    return float(np.mean(corrs))
+
+    return float(np.mean(corrs[valid_mask]))
 
 
 # ---------------------------------------------------------------------------
@@ -215,6 +235,7 @@ def compute_quintile_returns(
     n_quantiles: int = 5,
 ) -> dict:
     """Sort assets into quintiles by factor signal, compute average returns.
+    Fully vectorized across the time dimension for optimal performance.
 
     Parameters
     ----------
@@ -229,41 +250,36 @@ def compute_quintile_returns(
         Keys: Q1..Q{n}, long_short, monotonicity.
         Q1 is lowest signal quintile, Q{n} is highest.
     """
-    M, T = signals.shape
-    # Accumulate per-quintile return sums
-    quintile_returns = {q: [] for q in range(1, n_quantiles + 1)}
+    invalid = np.isnan(signals) | np.isnan(returns)
+    valid_count = (~invalid).sum(axis=0)
 
-    for t in range(T):
-        s = signals[:, t]
-        r = returns[:, t]
-        valid = ~(np.isnan(s) | np.isnan(r))
-        n = valid.sum()
-        if n < n_quantiles:
-            continue
-        s_valid = s[valid]
-        r_valid = r[valid]
-        # Assign quintile labels via rank
-        ranks = rankdata(s_valid)
-        # Map to quintile: ceil(rank / n * n_quantiles), clamped
-        q_labels = np.clip(
-            np.ceil(ranks / n * n_quantiles).astype(int),
-            1,
-            n_quantiles,
-        )
-        for q in range(1, n_quantiles + 1):
-            mask = q_labels == q
-            if mask.any():
-                quintile_returns[q].append(float(np.mean(r_valid[mask])))
+    s_masked = np.where(invalid, np.nan, signals)
+    ranks = rankdata(s_masked, axis=0, nan_policy='omit')
 
-    result = {}
+    with np.errstate(divide='ignore', invalid='ignore'):
+        q_labels = np.ceil(ranks / valid_count * n_quantiles)
+
+    q_labels = np.clip(q_labels, 1, n_quantiles)
+
+    period_mask = valid_count >= n_quantiles
+
     means = {}
+    result = {}
+
+    import warnings
     for q in range(1, n_quantiles + 1):
-        key = f"Q{q}"
-        if quintile_returns[q]:
-            means[q] = float(np.mean(quintile_returns[q]))
+        mask = (q_labels == q) & ~invalid
+        with np.errstate(divide='ignore', invalid='ignore'), warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            period_means = np.nansum(np.where(mask, returns, np.nan), axis=0) / mask.sum(axis=0)
+
+        valid_period_means = period_means[period_mask & ~np.isnan(period_means)]
+        if len(valid_period_means) > 0:
+            means[q] = float(np.mean(valid_period_means))
         else:
             means[q] = 0.0
-        result[key] = means[q]
+
+        result[f"Q{q}"] = means[q]
 
     # Long-short: top quintile minus bottom quintile
     result["long_short"] = means[n_quantiles] - means[1]
