@@ -14,6 +14,7 @@ from scipy.stats import rankdata
 # Information Coefficient
 # ---------------------------------------------------------------------------
 
+
 def compute_ic(signals: np.ndarray, returns: np.ndarray) -> np.ndarray:
     """Compute IC_t = Corr_rank(s_t, r_{t+1}) for each time period.
 
@@ -47,7 +48,7 @@ def compute_ic(signals: np.ndarray, returns: np.ndarray) -> np.ndarray:
         # Pearson correlation on ranks = Spearman
         rs_m = rs - rs.mean()
         rr_m = rr - rr.mean()
-        denom = np.sqrt((rs_m ** 2).sum() * (rr_m ** 2).sum())
+        denom = np.sqrt((rs_m**2).sum() * (rr_m**2).sum())
         if denom < 1e-12:
             ic_series[t] = 0.0
         else:
@@ -91,7 +92,7 @@ def compute_ic_vectorized(signals: np.ndarray, returns: np.ndarray) -> np.ndarra
         rr = rankdata(ret_filled[valid, t])
         rs_m = rs - rs.mean()
         rr_m = rr - rr.mean()
-        denom = np.sqrt((rs_m ** 2).sum() * (rr_m ** 2).sum())
+        denom = np.sqrt((rs_m**2).sum() * (rr_m**2).sum())
         ic_series[t] = (rs_m * rr_m).sum() / denom if denom > 1e-12 else 0.0
 
     return ic_series
@@ -100,6 +101,7 @@ def compute_ic_vectorized(signals: np.ndarray, returns: np.ndarray) -> np.ndarra
 # ---------------------------------------------------------------------------
 # IC-derived statistics
 # ---------------------------------------------------------------------------
+
 
 def compute_icir(ic_series: np.ndarray) -> float:
     """Compute ICIR = mean(IC) / std(IC).
@@ -162,6 +164,7 @@ def compute_ic_win_rate(ic_series: np.ndarray) -> float:
 # Cross-factor correlation
 # ---------------------------------------------------------------------------
 
+
 def compute_pairwise_correlation(
     signals_a: np.ndarray,
     signals_b: np.ndarray,
@@ -180,34 +183,43 @@ def compute_pairwise_correlation(
     float
         Average cross-sectional Spearman correlation.
     """
-    M, T = signals_a.shape
-    corrs = []
+    # ⚡ Bolt Optimization: Replaced Python temporal loop with fully vectorized operations
+    # over `axis=0` utilizing scipy's `rankdata(..., nan_policy='omit')` and numpy broadcasting.
+    # Yields significant speedups for large M and T.
+    invalid = np.isnan(signals_a) | np.isnan(signals_b)
 
-    for t in range(T):
-        a = signals_a[:, t]
-        b = signals_b[:, t]
-        valid = ~(np.isnan(a) | np.isnan(b))
-        n = valid.sum()
-        if n < 5:
-            continue
-        ra = rankdata(a[valid])
-        rb = rankdata(b[valid])
-        ra_m = ra - ra.mean()
-        rb_m = rb - rb.mean()
-        denom = np.sqrt((ra_m ** 2).sum() * (rb_m ** 2).sum())
-        if denom < 1e-12:
-            corrs.append(0.0)
-        else:
-            corrs.append(float((ra_m * rb_m).sum() / denom))
+    # Fill with np.nan for rankdata(..., nan_policy='omit')
+    sig_a_valid = np.where(invalid, np.nan, signals_a)
+    sig_b_valid = np.where(invalid, np.nan, signals_b)
 
-    if not corrs:
+    ra = rankdata(sig_a_valid, axis=0, nan_policy="omit")
+    rb = rankdata(sig_b_valid, axis=0, nan_policy="omit")
+
+    # Suppress warnings for empty slices if a column is entirely NaN
+    with np.errstate(divide="ignore", invalid="ignore"), __import__("warnings").catch_warnings():
+        __import__("warnings").simplefilter("ignore", category=RuntimeWarning)
+        ra_m = ra - np.nanmean(ra, axis=0)
+        rb_m = rb - np.nanmean(rb, axis=0)
+
+        cov = np.nansum(ra_m * rb_m, axis=0)
+        denom = np.sqrt(np.nansum(ra_m**2, axis=0) * np.nansum(rb_m**2, axis=0))
+
+    valid_counts = np.sum(~invalid, axis=0)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        corrs = np.where(denom > 1e-12, cov / denom, 0.0)
+
+    valid_mask = valid_counts >= 5
+    if not np.any(valid_mask):
         return 0.0
-    return float(np.mean(corrs))
+
+    return float(np.mean(corrs[valid_mask]))
 
 
 # ---------------------------------------------------------------------------
 # Quintile analysis
 # ---------------------------------------------------------------------------
+
 
 def compute_quintile_returns(
     signals: np.ndarray,
@@ -278,7 +290,7 @@ def compute_quintile_returns(
         rr = rankdata(q_returns)
         rq_m = rq - rq.mean()
         rr_m = rr - rr.mean()
-        denom = np.sqrt((rq_m ** 2).sum() * (rr_m ** 2).sum())
+        denom = np.sqrt((rq_m**2).sum() * (rr_m**2).sum())
         result["monotonicity"] = float((rq_m * rr_m).sum() / denom) if denom > 1e-12 else 0.0
 
     return result
@@ -287,6 +299,7 @@ def compute_quintile_returns(
 # ---------------------------------------------------------------------------
 # Turnover
 # ---------------------------------------------------------------------------
+
 
 def compute_turnover(signals: np.ndarray, top_fraction: float = 0.2) -> float:
     """Compute average portfolio turnover rate.
@@ -335,6 +348,7 @@ def compute_turnover(signals: np.ndarray, top_fraction: float = 0.2) -> float:
 # ---------------------------------------------------------------------------
 # Comprehensive factor statistics
 # ---------------------------------------------------------------------------
+
 
 def compute_factor_stats(
     signals: np.ndarray,

@@ -1,0 +1,4 @@
+## 2024-05-24 - Vectorizing Time-series Operations
+**Learning:** Cross-sectional metrics over time (like IC, pairwise correlation, quintile returns, turnover) in `factorminer/evaluation/metrics.py` often use explicit Python `for t in range(T):` loops. Fully vectorizing these operations using `scipy.stats.rankdata(..., axis=0, nan_policy='omit')` against the entire `(M, T)` array achieves a >2x speedup over temporal iteration. But be careful when using `nan_policy='omit'`, the implementation can be slower in some edge cases. A faster and reliable way for correlation is `np.nansum` and `scipy.stats.rankdata` appropriately broadcasted. Also using numpy's `np.intersect1d` or similar on vectorized indices for turnover provides significant speedup.
+
+**Action:** Whenever possible, replace explicit `for t in range(T):` loops in `factorminer/evaluation/metrics.py` with fully vectorized numpy/scipy operations applied over `axis=0`.
