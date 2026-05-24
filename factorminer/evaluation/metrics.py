@@ -35,24 +35,29 @@ def compute_ic(signals: np.ndarray, returns: np.ndarray) -> np.ndarray:
     M, T = signals.shape
     ic_series = np.full(T, np.nan, dtype=np.float64)
 
-    for t in range(T):
-        s = signals[:, t]
-        r = returns[:, t]
-        valid = ~(np.isnan(s) | np.isnan(r))
-        n = valid.sum()
-        if n < 5:
-            continue
-        rs = rankdata(s[valid])
-        rr = rankdata(r[valid])
-        # Pearson correlation on ranks = Spearman
-        rs_m = rs - rs.mean()
-        rr_m = rr - rr.mean()
-        denom = np.sqrt((rs_m ** 2).sum() * (rr_m ** 2).sum())
-        if denom < 1e-12:
-            ic_series[t] = 0.0
-        else:
-            ic_series[t] = (rs_m * rr_m).sum() / denom
+    valid = ~(np.isnan(signals) | np.isnan(returns))
+    valid_counts = valid.sum(axis=0)
 
+    s = np.where(valid, signals, np.nan)
+    r = np.where(valid, returns, np.nan)
+
+    rs = rankdata(s, method='average', axis=0, nan_policy='omit')
+    rr = rankdata(r, method='average', axis=0, nan_policy='omit')
+
+    rs_mean = (valid_counts + 1) / 2.0
+    rr_mean = (valid_counts + 1) / 2.0
+
+    rs_m = np.where(valid, rs - rs_mean, 0.0)
+    rr_m = np.where(valid, rr - rr_mean, 0.0)
+
+    num = np.nansum(rs_m * rr_m, axis=0)
+    denom = np.sqrt(np.nansum(rs_m ** 2, axis=0) * np.nansum(rr_m ** 2, axis=0))
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        corrs = np.where(denom > 1e-12, num / denom, 0.0)
+
+    mask = valid_counts >= 5
+    ic_series[mask] = corrs[mask]
     return ic_series
 
 
@@ -181,26 +186,30 @@ def compute_pairwise_correlation(
         Average cross-sectional Spearman correlation.
     """
     M, T = signals_a.shape
-    corrs = []
 
-    for t in range(T):
-        a = signals_a[:, t]
-        b = signals_b[:, t]
-        valid = ~(np.isnan(a) | np.isnan(b))
-        n = valid.sum()
-        if n < 5:
-            continue
-        ra = rankdata(a[valid])
-        rb = rankdata(b[valid])
-        ra_m = ra - ra.mean()
-        rb_m = rb - rb.mean()
-        denom = np.sqrt((ra_m ** 2).sum() * (rb_m ** 2).sum())
-        if denom < 1e-12:
-            corrs.append(0.0)
-        else:
-            corrs.append(float((ra_m * rb_m).sum() / denom))
+    valid = ~(np.isnan(signals_a) | np.isnan(signals_b))
+    valid_counts = valid.sum(axis=0)
 
-    if not corrs:
+    a = np.where(valid, signals_a, np.nan)
+    b = np.where(valid, signals_b, np.nan)
+
+    ra = rankdata(a, method='average', axis=0, nan_policy='omit')
+    rb = rankdata(b, method='average', axis=0, nan_policy='omit')
+
+    ra_mean = (valid_counts + 1) / 2.0
+    rb_mean = (valid_counts + 1) / 2.0
+
+    ra_m = np.where(valid, ra - ra_mean, 0.0)
+    rb_m = np.where(valid, rb - rb_mean, 0.0)
+
+    num = np.nansum(ra_m * rb_m, axis=0)
+    denom = np.sqrt(np.nansum(ra_m ** 2, axis=0) * np.nansum(rb_m ** 2, axis=0))
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        corrs = np.where(denom > 1e-12, num / denom, 0.0)
+
+    corrs = corrs[valid_counts >= 5]
+    if len(corrs) == 0:
         return 0.0
     return float(np.mean(corrs))
 
