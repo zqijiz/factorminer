@@ -307,24 +307,39 @@ def compute_turnover(signals: np.ndarray, top_fraction: float = 0.2) -> float:
     """
     M, T = signals.shape
     k = max(int(M * top_fraction), 1)
-    turnovers = []
 
+    valid = ~np.isnan(signals)
+    valid_counts = valid.sum(axis=0)
+
+    valid_t = valid_counts >= k
+    if not np.any(valid_t):
+        return 0.0
+
+    # Replace NaNs with -inf to push them to the bottom
+    col_filled = np.where(valid, signals, -np.inf)
+
+    # Vectorized top-k selection across all columns at once
+    # This shape is (k, T)
+    top_indices = np.argpartition(col_filled, -k, axis=0)[-k:, :]
+
+    # Sort indices along axis 0 to allow fast overlap computation
+    # Sorting k elements is fast, and lets us use assume_unique=True in intersect1d
+    top_indices.sort(axis=0)
+
+    turnovers = []
     prev_top = None
+
     for t in range(T):
-        col = signals[:, t]
-        valid = ~np.isnan(col)
-        if valid.sum() < k:
+        if not valid_t[t]:
             prev_top = None
             continue
-        # Get indices of top-k assets
-        # Use argpartition for efficiency
-        col_filled = np.where(valid, col, -np.inf)
-        top_idx = set(np.argpartition(col_filled, -k)[-k:])
 
+        top_idx = top_indices[:, t]
         if prev_top is not None:
-            overlap = len(top_idx & prev_top)
-            turnover = 1.0 - overlap / k
-            turnovers.append(turnover)
+            # Fast overlap for sorted distinct 1D arrays
+            overlap = np.intersect1d(top_idx, prev_top, assume_unique=True).size
+            turnovers.append(1.0 - overlap / k)
+
         prev_top = top_idx
 
     if not turnovers:
