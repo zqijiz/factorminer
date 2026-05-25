@@ -1,0 +1,4 @@
+
+## 2024-05-18 - [Vectorize Top-K Indexing and Overlap for Portfolio Turnover]
+**Learning:** When calculating portfolio turnover across time, iterating over the time dimension to perform `np.argpartition` on each column individually and using Python `set` intersections is a performance bottleneck. NumPy's `np.argpartition` can be applied fully vectorized along an axis (e.g. `axis=0`) across all time slices simultaneously. Furthermore, NumPy's `np.intersect1d(..., assume_unique=True)` is significantly faster than python-level `set` operations when dealing with sorted 1D index arrays.
+**Action:** When computing cross-sectional overlap over time, vectorize `np.argpartition` or ranking operations across `axis=0`, sort the result columns if necessary, and use `np.intersect1d(..., assume_unique=True)` instead of Python loops and native `set` objects to get maximum performance out of the C backend.
