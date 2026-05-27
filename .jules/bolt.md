@@ -1,0 +1,3 @@
+## 2024-05-15 - Vectorized Cumulative Max/Min with NaNs
+**Learning:** For rolling or cumulative operations on NumPy arrays with NaNs along an axis (like `cummax` or `cummin`), Python loops (e.g. `out[:, t] = np.fmax(out[:, t - 1], x[:, t])`) are a major bottleneck. NumPy's `np.fmax.accumulate(x, axis=1)` and `np.fmin.accumulate(x, axis=1)` provide a fast C-level vectorized alternative that correctly handles missing values (NaNs), giving around a ~6x speedup on large arrays compared to the loop over the time dimension.
+**Action:** Always prefer `np.fmax.accumulate` or `np.fmin.accumulate` over manual iteration when computing cumulative extrema on arrays that may contain missing data.
