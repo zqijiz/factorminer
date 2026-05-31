@@ -41,9 +41,9 @@ def mul_np(x: np.ndarray, y: np.ndarray) -> np.ndarray:
 
 
 def div_np(x: np.ndarray, y: np.ndarray) -> np.ndarray:
-    out = np.full_like(x, np.nan, dtype=np.float64)
-    mask = np.abs(y) > _EPS_NP
-    out[mask] = x[mask] / y[mask]
+    # Use np.divide with where mask to avoid expensive intermediate masked array allocations
+    out = np.full(np.broadcast_shapes(np.shape(x), np.shape(y)), np.nan, dtype=np.result_type(x, y, float))
+    np.divide(x, y, out=out, where=np.abs(y) > _EPS_NP)
     return out
 
 
@@ -74,9 +74,9 @@ def square_np(x: np.ndarray) -> np.ndarray:
 
 
 def inv_np(x: np.ndarray) -> np.ndarray:
+    # Use np.divide with where mask to avoid expensive intermediate masked array allocations
     out = np.full_like(x, np.nan, dtype=np.float64)
-    mask = np.abs(x) > _EPS_NP
-    out[mask] = 1.0 / x[mask]
+    np.divide(1.0, x, out=out, where=np.abs(x) > _EPS_NP)
     return out
 
 
@@ -131,10 +131,8 @@ def mul_torch(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 
 
 def div_torch(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
-    mask = y.abs() > 1e-10
-    out = torch.full_like(x, float("nan"))
-    out[mask] = x[mask] / y[mask]
-    return out
+    # Use torch.where to avoid expensive boolean slice indexing and intermediate allocations
+    return torch.where(y.abs() > 1e-10, x / y, torch.tensor(float("nan"), device=x.device))
 
 
 def neg_torch(x: torch.Tensor) -> torch.Tensor:
@@ -162,10 +160,8 @@ def square_torch(x: torch.Tensor) -> torch.Tensor:
 
 
 def inv_torch(x: torch.Tensor) -> torch.Tensor:
-    mask = x.abs() > 1e-10
-    out = torch.full_like(x, float("nan"))
-    out[mask] = 1.0 / x[mask]
-    return out
+    # Use torch.where to avoid expensive boolean slice indexing and intermediate allocations
+    return torch.where(x.abs() > 1e-10, 1.0 / x, torch.tensor(float("nan"), device=x.device))
 
 
 def pow_torch(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
