@@ -45,9 +45,7 @@ def return_np(x: np.ndarray, window: int = 1) -> np.ndarray:
     if window < T:
         prev = x[:, :-window]
         mask = np.abs(prev) > 1e-10
-        out_slice = np.full_like(prev, np.nan)
-        out_slice[mask] = x[:, window:][mask] / prev[mask] - 1.0
-        out[:, window:] = out_slice
+        out[:, window:] = np.divide(x[:, window:], prev, out=np.full_like(prev, np.nan), where=mask) - 1.0
     return out
 
 
@@ -59,8 +57,9 @@ def log_return_np(x: np.ndarray, window: int = 1) -> np.ndarray:
     if window < T:
         prev = x[:, :-window]
         curr = x[:, window:]
+        mask = np.abs(prev) > 1e-10
+        ratio = np.divide(curr, prev, out=np.full_like(prev, np.nan), where=mask)
         with np.errstate(invalid="ignore", divide="ignore"):
-            ratio = np.where(np.abs(prev) > 1e-10, curr / prev, np.nan)
             out[:, window:] = np.where(ratio > 0, np.log(ratio), np.nan)
     return out
 
@@ -236,8 +235,7 @@ def return_torch(x: torch.Tensor, window: int = 1) -> torch.Tensor:
     if window < T:
         prev = x[:, :-window]
         mask = prev.abs() > 1e-10
-        r = torch.full_like(prev, float("nan"))
-        r[mask] = x[:, window:][mask] / prev[mask] - 1.0
+        r = torch.where(mask, x[:, window:] / prev - 1.0, float("nan"))
         out[:, window:] = r
     return out
 
@@ -250,11 +248,9 @@ def log_return_torch(x: torch.Tensor, window: int = 1) -> torch.Tensor:
         prev = x[:, :-window]
         curr = x[:, window:]
         mask = prev.abs() > 1e-10
-        ratio = torch.full_like(prev, float("nan"))
-        ratio[mask] = curr[mask] / prev[mask]
-        lr = torch.full_like(prev, float("nan"))
-        pos = ratio > 0
-        lr[pos] = ratio[pos].log()
+        ratio = torch.where(mask, curr / prev, float("nan"))
+        pos_mask = (ratio > 0) & ~torch.isnan(ratio)
+        lr = torch.where(pos_mask, ratio.log(), float("nan"))
         out[:, window:] = lr
     return out
 
