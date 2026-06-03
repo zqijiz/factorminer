@@ -14,6 +14,7 @@ from scipy.stats import rankdata
 # Information Coefficient
 # ---------------------------------------------------------------------------
 
+
 def compute_ic(signals: np.ndarray, returns: np.ndarray) -> np.ndarray:
     """Compute IC_t = Corr_rank(s_t, r_{t+1}) for each time period.
 
@@ -47,7 +48,7 @@ def compute_ic(signals: np.ndarray, returns: np.ndarray) -> np.ndarray:
         # Pearson correlation on ranks = Spearman
         rs_m = rs - rs.mean()
         rr_m = rr - rr.mean()
-        denom = np.sqrt((rs_m ** 2).sum() * (rr_m ** 2).sum())
+        denom = np.sqrt((rs_m**2).sum() * (rr_m**2).sum())
         if denom < 1e-12:
             ic_series[t] = 0.0
         else:
@@ -91,7 +92,7 @@ def compute_ic_vectorized(signals: np.ndarray, returns: np.ndarray) -> np.ndarra
         rr = rankdata(ret_filled[valid, t])
         rs_m = rs - rs.mean()
         rr_m = rr - rr.mean()
-        denom = np.sqrt((rs_m ** 2).sum() * (rr_m ** 2).sum())
+        denom = np.sqrt((rs_m**2).sum() * (rr_m**2).sum())
         ic_series[t] = (rs_m * rr_m).sum() / denom if denom > 1e-12 else 0.0
 
     return ic_series
@@ -100,6 +101,7 @@ def compute_ic_vectorized(signals: np.ndarray, returns: np.ndarray) -> np.ndarra
 # ---------------------------------------------------------------------------
 # IC-derived statistics
 # ---------------------------------------------------------------------------
+
 
 def compute_icir(ic_series: np.ndarray) -> float:
     """Compute ICIR = mean(IC) / std(IC).
@@ -162,6 +164,7 @@ def compute_ic_win_rate(ic_series: np.ndarray) -> float:
 # Cross-factor correlation
 # ---------------------------------------------------------------------------
 
+
 def compute_pairwise_correlation(
     signals_a: np.ndarray,
     signals_b: np.ndarray,
@@ -194,7 +197,7 @@ def compute_pairwise_correlation(
         rb = rankdata(b[valid])
         ra_m = ra - ra.mean()
         rb_m = rb - rb.mean()
-        denom = np.sqrt((ra_m ** 2).sum() * (rb_m ** 2).sum())
+        denom = np.sqrt((ra_m**2).sum() * (rb_m**2).sum())
         if denom < 1e-12:
             corrs.append(0.0)
         else:
@@ -208,6 +211,7 @@ def compute_pairwise_correlation(
 # ---------------------------------------------------------------------------
 # Quintile analysis
 # ---------------------------------------------------------------------------
+
 
 def compute_quintile_returns(
     signals: np.ndarray,
@@ -278,7 +282,7 @@ def compute_quintile_returns(
         rr = rankdata(q_returns)
         rq_m = rq - rq.mean()
         rr_m = rr - rr.mean()
-        denom = np.sqrt((rq_m ** 2).sum() * (rr_m ** 2).sum())
+        denom = np.sqrt((rq_m**2).sum() * (rr_m**2).sum())
         result["monotonicity"] = float((rq_m * rr_m).sum() / denom) if denom > 1e-12 else 0.0
 
     return result
@@ -287,6 +291,7 @@ def compute_quintile_returns(
 # ---------------------------------------------------------------------------
 # Turnover
 # ---------------------------------------------------------------------------
+
 
 def compute_turnover(signals: np.ndarray, top_fraction: float = 0.2) -> float:
     """Compute average portfolio turnover rate.
@@ -307,34 +312,41 @@ def compute_turnover(signals: np.ndarray, top_fraction: float = 0.2) -> float:
     """
     M, T = signals.shape
     k = max(int(M * top_fraction), 1)
-    turnovers = []
 
-    prev_top = None
-    for t in range(T):
-        col = signals[:, t]
-        valid = ~np.isnan(col)
-        if valid.sum() < k:
-            prev_top = None
-            continue
-        # Get indices of top-k assets
-        # Use argpartition for efficiency
-        col_filled = np.where(valid, col, -np.inf)
-        top_idx = set(np.argpartition(col_filled, -k)[-k:])
+    # Fast validation
+    valid_mask = ~np.isnan(signals)
+    valid_counts = valid_mask.sum(axis=0)
+    valid_periods = valid_counts >= k
 
-        if prev_top is not None:
-            overlap = len(top_idx & prev_top)
-            turnover = 1.0 - overlap / k
-            turnovers.append(turnover)
-        prev_top = top_idx
+    # We partition columns to get top indices
+    # Using argpartition over axis=0 is faster than looping
+    filled = np.where(valid_mask, signals, -np.inf)
+    top_indices = np.argpartition(filled, -k, axis=0)[-k:, :]
 
-    if not turnovers:
+    # Sort column-wise for fast intersection
+    top_indices.sort(axis=0)
+
+    overlaps = []
+
+    for t in range(1, T):
+        if valid_periods[t] and valid_periods[t - 1]:
+            # intersect1d is fast since columns are sorted and unique
+            overlap = len(
+                np.intersect1d(top_indices[:, t], top_indices[:, t - 1], assume_unique=True)
+            )
+            overlaps.append(overlap)
+
+    if not overlaps:
         return 0.0
+
+    turnovers = 1.0 - np.array(overlaps) / k
     return float(np.mean(turnovers))
 
 
 # ---------------------------------------------------------------------------
 # Comprehensive factor statistics
 # ---------------------------------------------------------------------------
+
 
 def compute_factor_stats(
     signals: np.ndarray,
