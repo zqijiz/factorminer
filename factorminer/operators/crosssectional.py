@@ -24,15 +24,28 @@ def cs_rank_np(x: np.ndarray) -> np.ndarray:
     For each time step, rank assets from 0 to 1.  NaN inputs get NaN rank.
     """
     M, T = x.shape
+
+    # Sort indices. np.argsort natively sorts NaNs to the end
+    idx = np.argsort(x, axis=0)
+
+    # Rank
+    ranks = np.empty_like(idx)
+    np.put_along_axis(ranks, idx, np.broadcast_to(np.arange(M)[:, None], (M, T)), axis=0)
+
+    # Valid count
+    valid = ~np.isnan(x)
+    n_valid = valid.sum(axis=0)
+
+    # Mask where valid count >= 2
+    mask = n_valid >= 2
+
     out = np.full_like(x, np.nan, dtype=np.float64)
-    for t in range(T):
-        col = x[:, t]
-        valid = ~np.isnan(col)
-        n = valid.sum()
-        if n < 2:
-            continue
-        order = col[valid].argsort().argsort().astype(np.float64)
-        out[valid, t] = order / (n - 1)
+
+    ranks_float = ranks.astype(np.float64)
+
+    # Using np.divide to assign normalized ranks only where valid and n_valid >= 2
+    np.divide(ranks_float, n_valid - 1, out=out, where=valid & mask)
+
     return out
 
 
@@ -40,8 +53,10 @@ def cs_zscore_np(x: np.ndarray) -> np.ndarray:
     """Cross-sectional z-score."""
     m = np.nanmean(x, axis=0, keepdims=True)
     s = np.nanstd(x, axis=0, keepdims=True, ddof=0)
+    out = np.full_like(x, np.nan)
     with np.errstate(invalid="ignore", divide="ignore"):
-        return np.where(s > 1e-10, (x - m) / s, np.nan)
+        np.divide(x - m, s, out=out, where=s > 1e-10)
+    return out
 
 
 def cs_demean_np(x: np.ndarray) -> np.ndarray:
@@ -52,8 +67,10 @@ def cs_demean_np(x: np.ndarray) -> np.ndarray:
 def cs_scale_np(x: np.ndarray) -> np.ndarray:
     """Scale to unit L1 norm cross-sectionally."""
     l1 = np.nansum(np.abs(x), axis=0, keepdims=True)
+    out = np.full_like(x, np.nan)
     with np.errstate(invalid="ignore", divide="ignore"):
-        return np.where(l1 > 1e-10, x / l1, np.nan)
+        np.divide(x, l1, out=out, where=l1 > 1e-10)
+    return out
 
 
 def cs_neutralize_np(x: np.ndarray) -> np.ndarray:
