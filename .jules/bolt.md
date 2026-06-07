@@ -1,0 +1,3 @@
+## 2025-06-07 - [Vectorize manual rank array tie handling]
+**Learning:** In backtesting logic, manually computing 1-D ranks with tie handling using Python `while` loops is very slow for large datasets (e.g., shape T=2520, N=3000), accounting for a substantial portion of the backtest duration. While an `argsort` approach doesn't handle ties correctly by default, `scipy.stats.rankdata` properly computes average-rank ties. By adapting `rankdata` to map into a bounded `[0, 1]` range, we can eliminate the Python loops completely.
+**Action:** Replace manual tie-handling `while` loops with `scipy.stats.rankdata` in cross-sectional rank calculations.
