@@ -8,7 +8,6 @@ factor library.  Supports both numpy and optional torch backends.
 from __future__ import annotations
 
 import numpy as np
-from scipy.stats import rankdata
 
 # ---------------------------------------------------------------------------
 # Batch cross-sectional Spearman rank correlation
@@ -26,6 +25,7 @@ def _rank_columns(x: np.ndarray) -> np.ndarray:
     np.ndarray, shape (M, T)
         Ranks per column, NaN where input was NaN.
     """
+    from scipy.stats import rankdata
     M, T = x.shape
     ranked = np.full_like(x, np.nan, dtype=np.float64)
     for t in range(T):
@@ -70,25 +70,33 @@ def batch_spearman_correlation(
 
     for i in range(N):
         lib_ranked = _rank_columns(library_signals[i])
-        corr_sum = 0.0
-        count = 0
-        for t in range(T):
-            cr = cand_ranked[:, t]
-            lr = lib_ranked[:, t]
-            valid = ~(np.isnan(cr) | np.isnan(lr))
-            n = valid.sum()
-            if n < 5:
-                continue
-            cr_v = cr[valid]
-            lr_v = lr[valid]
-            cr_m = cr_v - cr_v.mean()
-            lr_m = lr_v - lr_v.mean()
-            denom = np.sqrt((cr_m ** 2).sum() * (lr_m ** 2).sum())
-            if denom > 1e-12:
-                corr_sum += (cr_m * lr_m).sum() / denom
-            count += 1
-        if count > 0:
-            correlations[i] = corr_sum / count
+
+        valid = ~(np.isnan(cand_ranked) | np.isnan(lib_ranked))
+        c_vals = np.where(valid, cand_ranked, 0.0)
+        l_vals = np.where(valid, lib_ranked, 0.0)
+
+        counts = valid.sum(axis=0)
+
+        c_mean = c_vals.sum(axis=0) / np.maximum(counts, 1)
+        l_mean = l_vals.sum(axis=0) / np.maximum(counts, 1)
+
+        c_centered = c_vals - c_mean
+        l_centered = l_vals - l_mean
+
+        c_centered[~valid] = 0.0
+        l_centered[~valid] = 0.0
+
+        cov = (c_centered * l_centered).sum(axis=0)
+        var_c = (c_centered**2).sum(axis=0)
+        var_l = (l_centered**2).sum(axis=0)
+
+        denom = np.sqrt(var_c * var_l)
+
+        mask = (counts >= 5) & (denom > 1e-12)
+        if np.any(mask):
+            # Using np.divide with where for safe division as per memory instructions
+            corrs = np.divide(cov, denom, out=np.zeros_like(cov), where=mask)
+            correlations[i] = np.mean(corrs[mask])
 
     return correlations
 
@@ -121,26 +129,36 @@ def batch_spearman_pairwise(
 
     for i in range(K):
         for j in range(i + 1, K):
-            corr_sum = 0.0
-            count = 0
-            for t in range(T):
-                ri = ranked_list[i][:, t]
-                rj = ranked_list[j][:, t]
-                valid = ~(np.isnan(ri) | np.isnan(rj))
-                n = valid.sum()
-                if n < 5:
-                    continue
-                ri_v = ri[valid]
-                rj_v = rj[valid]
-                ri_m = ri_v - ri_v.mean()
-                rj_m = rj_v - rj_v.mean()
-                denom = np.sqrt((ri_m ** 2).sum() * (rj_m ** 2).sum())
-                if denom > 1e-12:
-                    corr_sum += (ri_m * rj_m).sum() / denom
-                count += 1
-            if count > 0:
-                corr_matrix[i, j] = corr_sum / count
-                corr_matrix[j, i] = corr_matrix[i, j]
+            ri = ranked_list[i]
+            rj = ranked_list[j]
+
+            valid = ~(np.isnan(ri) | np.isnan(rj))
+            val_i = np.where(valid, ri, 0.0)
+            val_j = np.where(valid, rj, 0.0)
+
+            counts = valid.sum(axis=0)
+
+            mi = val_i.sum(axis=0) / np.maximum(counts, 1)
+            mj = val_j.sum(axis=0) / np.maximum(counts, 1)
+
+            ci = val_i - mi
+            cj = val_j - mj
+
+            ci[~valid] = 0.0
+            cj[~valid] = 0.0
+
+            cov = (ci * cj).sum(axis=0)
+            var_i = (ci**2).sum(axis=0)
+            var_j = (cj**2).sum(axis=0)
+
+            denom = np.sqrt(var_i * var_j)
+
+            mask = (counts >= 5) & (denom > 1e-12)
+            if np.any(mask):
+                corrs = np.divide(cov, denom, out=np.zeros_like(cov), where=mask)
+                corr = np.mean(corrs[mask])
+                corr_matrix[i, j] = corr
+                corr_matrix[j, i] = corr
 
     return corr_matrix
 
