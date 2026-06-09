@@ -49,8 +49,11 @@ def ema_np(x: np.ndarray, window: int = 10) -> np.ndarray:
         curr = x[:, t]
         both_valid = ~np.isnan(prev) & ~np.isnan(curr)
         only_prev = ~np.isnan(prev) & np.isnan(curr)
-        out[both_valid, t] = alpha * curr[both_valid] + (1 - alpha) * prev[both_valid]
-        out[only_prev, t] = prev[only_prev]
+
+        # Branchless update to avoid expensive boolean slice assignments in a loop
+        new_val = np.where(both_valid, alpha * curr + (1 - alpha) * prev,
+                           np.where(only_prev, prev, out[:, t]))
+        out[:, t] = new_val
     return out
 
 
@@ -69,16 +72,28 @@ def kama_np(x: np.ndarray, window: int = 10) -> np.ndarray:
     M, T = x.shape
     out = np.copy(x).astype(np.float64)
 
+    # Pre-calculate rolling volatility and direction outside the loop for speed
+    diffs = np.abs(np.diff(x, axis=1))
+    np.nan_to_num(diffs, copy=False, nan=0.0)
+
+    cumsum_diffs = np.zeros((M, T), dtype=np.float64)
+    cumsum_diffs[:, 1:] = np.cumsum(diffs, axis=1)
+
+    direction_all = np.abs(x[:, window:] - x[:, :-window])
+    volatility_all = cumsum_diffs[:, window:] - cumsum_diffs[:, :-window]
+
+    with np.errstate(invalid="ignore", divide="ignore"):
+        er_all = np.where(volatility_all > 1e-10, direction_all / volatility_all, 0.0)
+    sc_all = (er_all * (fast_sc - slow_sc) + slow_sc) ** 2
+
     for t in range(window, T):
-        direction = np.abs(x[:, t] - x[:, t - window])
-        volatility = np.nansum(np.abs(np.diff(x[:, t - window:t + 1], axis=1)), axis=1)
-        with np.errstate(invalid="ignore", divide="ignore"):
-            er = np.where(volatility > 1e-10, direction / volatility, 0.0)
-        sc = (er * (fast_sc - slow_sc) + slow_sc) ** 2
+        sc = sc_all[:, t - window]
         prev = out[:, t - 1]
         curr = x[:, t]
         valid = ~np.isnan(prev) & ~np.isnan(curr)
-        out[valid, t] = prev[valid] + sc[valid] * (curr[valid] - prev[valid])
+
+        # Branchless update avoids expensive slice assignment overhead
+        out[:, t] = np.where(valid, prev + sc * (curr - prev), out[:, t])
     return out
 
 
@@ -120,8 +135,11 @@ def ema_torch(x: torch.Tensor, window: int = 10) -> torch.Tensor:
         curr = x[:, t]
         both = ~torch.isnan(prev) & ~torch.isnan(curr)
         only_prev = ~torch.isnan(prev) & torch.isnan(curr)
-        out[both, t] = alpha * curr[both] + (1 - alpha) * prev[both]
-        out[only_prev, t] = prev[only_prev]
+
+        # Branchless update eliminates host-device sync overhead in PyTorch loops
+        new_val = torch.where(both, alpha * curr + (1 - alpha) * prev,
+                           torch.where(only_prev, prev, out[:, t]))
+        out[:, t] = new_val
     return out
 
 
@@ -137,15 +155,23 @@ def kama_torch(x: torch.Tensor, window: int = 10) -> torch.Tensor:
     slow_sc = 2.0 / (30.0 + 1.0)
     M, T = x.shape
     out = x.clone()
+
+    # Pre-calculate volatility and direction outside the loop
+    diffs = x.diff(dim=1).abs()
+    volatility_all = diffs.unfold(1, window, 1).nansum(dim=2)
+    direction_all = (x[:, window:] - x[:, :-window]).abs()
+
+    er_all = torch.where(volatility_all > 1e-10, direction_all / volatility_all, torch.zeros_like(direction_all))
+    sc_all = (er_all * (fast_sc - slow_sc) + slow_sc) ** 2
+
     for t in range(window, T):
-        direction = (x[:, t] - x[:, t - window]).abs()
-        vol = x[:, t - window:t + 1].diff(dim=1).abs().nansum(dim=1)
-        er = torch.where(vol > 1e-10, direction / vol, torch.zeros_like(direction))
-        sc = (er * (fast_sc - slow_sc) + slow_sc) ** 2
+        sc = sc_all[:, t - window]
         prev = out[:, t - 1]
         curr = x[:, t]
         valid = ~torch.isnan(prev) & ~torch.isnan(curr)
-        out[valid, t] = prev[valid] + sc[valid] * (curr[valid] - prev[valid])
+
+        # Branchless sequential update
+        out[:, t] = torch.where(valid, prev + sc * (curr - prev), out[:, t])
     return out
 
 
