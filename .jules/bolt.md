@@ -1,0 +1,3 @@
+## 2024-05-24 - [Vectorizing Timeseries Operators]
+**Learning:** For rolling or cumulative min/max operations on 2D time-series arrays containing NaNs, using Python-level loops inside the functions is a severe bottleneck causing O(M*T) complexity where T iteration runs in the Python interpreter. `np.fmax.accumulate` and `np.fmin.accumulate` natively handle NaNs appropriately (by ignoring them or propagating them as per fmax/fmin semantics) and offer substantial performance gains (e.g., ~3x faster) by keeping the iteration strictly within C code.
+**Action:** When implementing new time-series rolling/cumulative operators, always check for corresponding `np.*.accumulate` functions or similar vectorized approaches to avoid the O(T) loop anti-pattern.
