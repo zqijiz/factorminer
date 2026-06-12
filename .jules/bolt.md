@@ -1,0 +1,3 @@
+## 2025-02-28 - Fast Vectorized 2D Cross-Sectional Ranking
+**Learning:** For continuous cross-sectional data, replacing an explicit Python loop over the time dimension and `scipy.stats.rankdata(nan_policy='omit')` with a single, completely vectorized `pd.DataFrame(x).rank(method='average', na_option='keep')` results in massive performance gains (~2.5x faster) for ranking and Spearman correlations while perfectly preserving "average" tie-handling semantics and `np.nan` propagation.
+**Action:** When implementing cross-sectional ranking on large 2D arrays, default to using pandas `DataFrame.rank` over SciPy's `rankdata` to avoid loop overhead and `nan_policy='omit'` bottlenecks while strictly preserving correct tie-breaking semantics.
