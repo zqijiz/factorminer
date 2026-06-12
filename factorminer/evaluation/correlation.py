@@ -8,11 +8,12 @@ factor library.  Supports both numpy and optional torch backends.
 from __future__ import annotations
 
 import numpy as np
-from scipy.stats import rankdata
 
 # ---------------------------------------------------------------------------
 # Batch cross-sectional Spearman rank correlation
 # ---------------------------------------------------------------------------
+import pandas as pd
+
 
 def _rank_columns(x: np.ndarray) -> np.ndarray:
     """Rank each column of x independently, leaving NaN as NaN.
@@ -26,14 +27,14 @@ def _rank_columns(x: np.ndarray) -> np.ndarray:
     np.ndarray, shape (M, T)
         Ranks per column, NaN where input was NaN.
     """
-    M, T = x.shape
-    ranked = np.full_like(x, np.nan, dtype=np.float64)
-    for t in range(T):
-        col = x[:, t]
-        valid = ~np.isnan(col)
-        if valid.sum() < 2:
-            continue
-        ranked[valid, t] = rankdata(col[valid])
+    # Use pandas vectorization to preserve average-tie semantics while avoiding slow Python loops
+    ranked = pd.DataFrame(x).rank(method="average", na_option="keep").values.copy()
+
+    # Original behavior strictly returned NaN columns for periods with < 2 valid data points
+    valid_counts = (~np.isnan(x)).sum(axis=0)
+    if np.any(valid_counts < 2):
+        ranked[:, valid_counts < 2] = np.nan
+
     return ranked
 
 
@@ -83,7 +84,7 @@ def batch_spearman_correlation(
             lr_v = lr[valid]
             cr_m = cr_v - cr_v.mean()
             lr_m = lr_v - lr_v.mean()
-            denom = np.sqrt((cr_m ** 2).sum() * (lr_m ** 2).sum())
+            denom = np.sqrt((cr_m**2).sum() * (lr_m**2).sum())
             if denom > 1e-12:
                 corr_sum += (cr_m * lr_m).sum() / denom
             count += 1
@@ -134,7 +135,7 @@ def batch_spearman_pairwise(
                 rj_v = rj[valid]
                 ri_m = ri_v - ri_v.mean()
                 rj_m = rj_v - rj_v.mean()
-                denom = np.sqrt((ri_m ** 2).sum() * (rj_m ** 2).sum())
+                denom = np.sqrt((ri_m**2).sum() * (rj_m**2).sum())
                 if denom > 1e-12:
                     corr_sum += (ri_m * rj_m).sum() / denom
                 count += 1
@@ -148,6 +149,7 @@ def batch_spearman_pairwise(
 # ---------------------------------------------------------------------------
 # Incremental correlation matrix update
 # ---------------------------------------------------------------------------
+
 
 class IncrementalCorrelationMatrix:
     """Maintains a correlation matrix that can be incrementally updated.
@@ -188,7 +190,7 @@ class IncrementalCorrelationMatrix:
             b_v = b_col[valid]
             a_m = a_v - a_v.mean()
             b_m = b_v - b_v.mean()
-            denom = np.sqrt((a_m ** 2).sum() * (b_m ** 2).sum())
+            denom = np.sqrt((a_m**2).sum() * (b_m**2).sum())
             if denom > 1e-12:
                 corr_sum += (a_m * b_m).sum() / denom
             count += 1
@@ -228,9 +230,7 @@ class IncrementalCorrelationMatrix:
         self._ranked.pop(factor_id, None)
         self._factor_ids = [fid for fid in self._factor_ids if fid != factor_id]
         # Remove cached correlations involving this factor
-        keys_to_remove = [
-            k for k in self._corr_cache if factor_id in k
-        ]
+        keys_to_remove = [k for k in self._corr_cache if factor_id in k]
         for k in keys_to_remove:
             del self._corr_cache[k]
 
@@ -281,6 +281,7 @@ class IncrementalCorrelationMatrix:
 # ---------------------------------------------------------------------------
 # Torch backend (optional)
 # ---------------------------------------------------------------------------
+
 
 def _try_torch_rank_correlation(
     candidate: np.ndarray,
@@ -337,7 +338,7 @@ def _try_torch_rank_correlation(
             l_rank = l_v.argsort().argsort().float() + 1.0
             c_m = c_rank - c_rank.mean()
             l_m = l_rank - l_rank.mean()
-            denom = torch.sqrt((c_m ** 2).sum() * (l_m ** 2).sum())
+            denom = torch.sqrt((c_m**2).sum() * (l_m**2).sum())
             if denom > 1e-12:
                 correlations[i] += (c_m * l_m).sum() / denom
 
