@@ -18,22 +18,35 @@ except ImportError:
 # NumPy implementations
 # ===========================================================================
 
+
 def cs_rank_np(x: np.ndarray) -> np.ndarray:
     """Cross-sectional percentile rank -- key GPU target (26x speedup).
 
     For each time step, rank assets from 0 to 1.  NaN inputs get NaN rank.
+
+    PERFORMANCE OPTIMIZATION:
+    Vectorized using pandas DataFrame.rank which is significantly faster
+    than scipy.stats.rankdata and python loops while correctly handling ties.
     """
-    M, T = x.shape
-    out = np.full_like(x, np.nan, dtype=np.float64)
-    for t in range(T):
-        col = x[:, t]
-        valid = ~np.isnan(col)
-        n = valid.sum()
-        if n < 2:
-            continue
-        order = col[valid].argsort().argsort().astype(np.float64)
-        out[valid, t] = order / (n - 1)
-    return out
+    import pandas as pd
+
+    not_nan = ~np.isnan(x)
+    counts = not_nan.sum(axis=0)
+
+    # Fast vectorized ranking using pandas
+    df = pd.DataFrame(x)
+    ranks = df.rank(method="average", na_option="keep").values
+
+    denom = np.maximum(counts - 1, 1)
+
+    # Preallocate output to avoid extra memory copying
+    res = np.empty_like(x, dtype=np.float64)
+    np.subtract(ranks, 1.0, out=res)
+    np.divide(res, denom, out=res)
+
+    # Columns with < 2 valid entries should be NaN
+    res[:, counts < 2] = np.nan
+    return res
 
 
 def cs_zscore_np(x: np.ndarray) -> np.ndarray:
@@ -62,24 +75,35 @@ def cs_neutralize_np(x: np.ndarray) -> np.ndarray:
 
 
 def cs_quantile_np(x: np.ndarray, n_bins: int = 5) -> np.ndarray:
-    """Assign each asset to a quantile bin (0 .. n_bins-1) cross-sectionally."""
+    """Assign each asset to a quantile bin (0 .. n_bins-1) cross-sectionally.
+
+    PERFORMANCE OPTIMIZATION:
+    Vectorized double-argsort replacing python loops to significantly speed up
+    the binning operation.
+    """
     n_bins = int(n_bins)
-    M, T = x.shape
-    out = np.full_like(x, np.nan, dtype=np.float64)
-    for t in range(T):
-        col = x[:, t]
-        valid = ~np.isnan(col)
-        n = valid.sum()
-        if n < 2:
-            continue
-        order = col[valid].argsort().argsort().astype(np.float64)
-        out[valid, t] = np.floor(order / n * n_bins).clip(0, n_bins - 1)
+    not_nan = ~np.isnan(x)
+    n_valid = not_nan.sum(axis=0)
+
+    # Replace NaNs with inf so they sort to the end
+    filled = np.where(not_nan, x, np.inf)
+
+    # Double argsort yields ranks (0-indexed)
+    ranks = filled.argsort(axis=0).argsort(axis=0).astype(np.float64)
+
+    denom = np.maximum(n_valid, 1)
+    out = np.floor(ranks / denom * n_bins).clip(0, n_bins - 1)
+
+    # Clean up NaNs and columns with < 2 valid elements
+    out[:, n_valid < 2] = np.nan
+    out[~not_nan] = np.nan
     return out
 
 
 # ===========================================================================
 # PyTorch implementations
 # ===========================================================================
+
 
 def cs_rank_torch(x: torch.Tensor) -> torch.Tensor:
     """Cross-sectional percentile rank -- fully vectorized for GPU."""
