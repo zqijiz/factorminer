@@ -1,0 +1,3 @@
+## 2025-02-28 - [Vectorize batch spearman correlation]
+**Learning:** Spearman correlation computations in `factorminer/evaluation/correlation.py` (`batch_spearman_correlation`, `batch_spearman_pairwise`) suffered from significant overhead due to Python `for t in range(T):` loops iterating over the time dimension. However, vectorizing over BOTH the library axis `N` (or `K`) and the time axis `T` by creating broadcasted 3D boolean/float matrices (e.g. `(N, M, T)`) consumes enormous amounts of memory on standard financial data scales, causing OOM issues.
+**Action:** Always restrict vectorization to the inner matrices (e.g., `(M, T)`) while retaining outer `for i in range(N):` loops to maintain stable memory usage while still avoiding Python-level time loop bottlenecks.
