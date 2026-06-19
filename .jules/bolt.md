@@ -1,0 +1,4 @@
+
+## 2024-06-19 - [Optimize Sequential Smoothing Ops]
+**Learning:** Sequential time series algorithms (like EMA and KAMA) are incredibly sensitive to in-loop array allocations and slice overhead, especially when using boolean array indexing or rolling slices in tight loops. Furthermore, attempting to replace an index loop with an explicit array of indices (e.g., `t_indices = torch.arange(...)`) introduces heavy GPU/CPU syncing and device mismatch bugs if the index tensor device isn't matched to the input data.
+**Action:** When forced to use a loop for a sequential algorithm, replace boolean assignment inside the loop (e.g. `out[valid, t] = ...`) with branchless logic (`np.where` / `torch.where`). Push all rolling/windowed calculations (like sum or diff) outside the loop using `cumsum`. For extracting windows from a cumulative sum, always use standard slice syntax (`cs[:, window:T] - cs[:, :T-window]`) instead of allocating separate index tensors.
