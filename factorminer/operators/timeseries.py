@@ -194,17 +194,13 @@ def cumprod_np(x: np.ndarray) -> np.ndarray:
 
 
 def cummax_np(x: np.ndarray) -> np.ndarray:
-    out = np.copy(x)
-    for t in range(1, x.shape[1]):
-        out[:, t] = np.fmax(out[:, t - 1], x[:, t])
-    return out
+    # Vectorized cumulative max using np.fmax.accumulate handles NaNs gracefully
+    return np.fmax.accumulate(x, axis=1)
 
 
 def cummin_np(x: np.ndarray) -> np.ndarray:
-    out = np.copy(x)
-    for t in range(1, x.shape[1]):
-        out[:, t] = np.fmin(out[:, t - 1], x[:, t])
-    return out
+    # Vectorized cumulative min using np.fmin.accumulate handles NaNs gracefully
+    return np.fmin.accumulate(x, axis=1)
 
 
 # ===========================================================================
