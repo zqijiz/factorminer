@@ -43,6 +43,7 @@ logger = logging.getLogger(__name__)
 # DebateConfig
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class DebateConfig:
     """Configuration for the multi-agent FactorMAD pipeline.
@@ -70,9 +71,7 @@ class DebateConfig:
         Maximum number of parallel threads for specialist generation.
     """
 
-    specialists: list[SpecialistConfig] = field(
-        default_factory=lambda: list(DEFAULT_SPECIALISTS)
-    )
+    specialists: list[SpecialistConfig] = field(default_factory=lambda: list(DEFAULT_SPECIALISTS))
     enable_critic: bool = True
     candidates_per_specialist: int = 15
     top_k_after_critic: int = 40
@@ -86,6 +85,7 @@ class DebateConfig:
 # ---------------------------------------------------------------------------
 # DebateResult
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class DebateResult:
@@ -123,6 +123,7 @@ class DebateResult:
 # DebateMemory -- cross-round debate history tracking
 # ---------------------------------------------------------------------------
 
+
 class DebateMemory:
     """Tracks debate history across rounds: who proposed what, what got admitted.
 
@@ -137,15 +138,18 @@ class DebateMemory:
     """
 
     _ALL_OP_FAMILIES: list[str] = [
-        "arithmetic", "statistical", "timeseries", "smoothing",
-        "cross_sectional", "regression", "logical",
+        "arithmetic",
+        "statistical",
+        "timeseries",
+        "smoothing",
+        "cross_sectional",
+        "regression",
+        "logical",
     ]
 
     def __init__(self, specialist_names: list[str]) -> None:
         self._specialist_names = list(specialist_names)
-        self._proposal_history: dict[str, list[tuple]] = {
-            name: [] for name in specialist_names
-        }
+        self._proposal_history: dict[str, list[tuple]] = {name: [] for name in specialist_names}
         self._rounds: list[dict[str, Any]] = []
         self._best_critic_patterns: list[str] = []
 
@@ -169,24 +173,24 @@ class DebateMemory:
         for spec_name, formulas in debate_result.specialist_proposals.items():
             for formula in formulas:
                 was_admitted = formula in admission_set
-                self._proposal_history.setdefault(spec_name, []).append(
-                    (formula, was_admitted)
-                )
+                self._proposal_history.setdefault(spec_name, []).append((formula, was_admitted))
 
         for score in debate_result.critic_scores:
             if score.composite_score >= 0.7 and score.formula in admission_set:
                 self._best_critic_patterns.append(score.formula)
 
-        self._rounds.append({
-            "n_proposals": len(debate_result.all_proposals),
-            "n_after_dedup": len(debate_result.after_dedup),
-            "n_after_critic": len(debate_result.after_critic),
-            "n_admissions": len(admissions),
-            "specialist_counts": {
-                name: len(formulas)
-                for name, formulas in debate_result.specialist_proposals.items()
-            },
-        })
+        self._rounds.append(
+            {
+                "n_proposals": len(debate_result.all_proposals),
+                "n_after_dedup": len(debate_result.after_dedup),
+                "n_after_critic": len(debate_result.after_critic),
+                "n_admissions": len(admissions),
+                "specialist_counts": {
+                    name: len(formulas)
+                    for name, formulas in debate_result.specialist_proposals.items()
+                },
+            }
+        )
 
     def get_specialist_leaderboard(self) -> list[dict[str, Any]]:
         """Return specialist performance sorted by admission rate.
@@ -203,12 +207,14 @@ class DebateMemory:
             proposed = len(history)
             admitted = sum(1 for _, was_admitted in history if was_admitted)
             rate = admitted / max(proposed, 1)
-            rows.append({
-                "name": name,
-                "proposed": proposed,
-                "admitted": admitted,
-                "admission_rate": rate,
-            })
+            rows.append(
+                {
+                    "name": name,
+                    "proposed": proposed,
+                    "admitted": admitted,
+                    "admission_rate": rate,
+                }
+            )
         rows.sort(key=lambda r: r["admission_rate"], reverse=True)
         return rows
 
@@ -245,14 +251,8 @@ class DebateMemory:
             }
 
         avg_count = total_proposals / len(self._ALL_OP_FAMILIES)
-        underused = [
-            f for f in self._ALL_OP_FAMILIES
-            if family_counts.get(f, 0) < avg_count * 0.4
-        ]
-        overused = [
-            f for f in self._ALL_OP_FAMILIES
-            if family_counts.get(f, 0) > avg_count * 2.5
-        ]
+        underused = [f for f in self._ALL_OP_FAMILIES if family_counts.get(f, 0) < avg_count * 0.4]
+        overused = [f for f in self._ALL_OP_FAMILIES if family_counts.get(f, 0) > avg_count * 2.5]
         return {"underused_families": underused, "overused_families": overused}
 
     def get_memory_summary_for_specialist(self, specialist_name: str) -> str:
@@ -263,10 +263,7 @@ class DebateMemory:
         proposed = len(history)
         admitted = sum(1 for _, a in history if a)
         rate = admitted / proposed
-        return (
-            f"{specialist_name}: {proposed} proposed, {admitted} admitted "
-            f"({rate:.1%} rate)."
-        )
+        return f"{specialist_name}: {proposed} proposed, {admitted} admitted ({rate:.1%} rate)."
 
     @property
     def total_rounds(self) -> int:
@@ -276,6 +273,7 @@ class DebateMemory:
 # ---------------------------------------------------------------------------
 # DebateOrchestrator -- full pipeline
 # ---------------------------------------------------------------------------
+
 
 class DebateOrchestrator:
     """Orchestrates the full multi-agent FactorMAD debate cycle.
@@ -375,9 +373,7 @@ class DebateOrchestrator:
                     existing_factors=existing_factors,
                 )
                 specialist_proposals[spec.name] = formulas
-                logger.info(
-                    "Specialist %s: %d proposals", spec.name, len(formulas)
-                )
+                logger.info("Specialist %s: %d proposals", spec.name, len(formulas))
 
         # Step 2: Merge all proposals
         all_proposals: list[str] = []
@@ -408,6 +404,7 @@ class DebateOrchestrator:
         for formula in after_dedup:
             spec_name = formula_to_specialist.get(formula, "unknown")
             from factorminer.agent.output_parser import _try_build_candidate
+
             existing_count = len(proposals_cf.get(spec_name, []))
             cf = _try_build_candidate(
                 f"{spec_name.lower()}_factor_{existing_count + 1}",
@@ -439,8 +436,7 @@ class DebateOrchestrator:
             "n_after_critic": len(after_critic),
             "n_duplicates_removed": n_removed,
             "specialist_counts": {
-                name: len(formulas)
-                for name, formulas in specialist_proposals.items()
+                name: len(formulas) for name, formulas in specialist_proposals.items()
             },
         }
 
@@ -480,8 +476,7 @@ class DebateOrchestrator:
         n_workers = min(self.max_workers, len(self.specialists))
         with concurrent.futures.ThreadPoolExecutor(max_workers=n_workers) as executor:
             futures = {
-                executor.submit(_run_specialist, spec): spec.name
-                for spec in self.specialists
+                executor.submit(_run_specialist, spec): spec.name for spec in self.specialists
             }
             for future in concurrent.futures.as_completed(futures):
                 spec_name = futures[future]
@@ -515,6 +510,7 @@ class DebateOrchestrator:
             return unique
 
         from factorminer.core.parser import try_parse
+
         seen_hashes: set = set()
         unique: list[str] = []
         for formula in formulas:
@@ -537,6 +533,7 @@ class DebateOrchestrator:
 # ---------------------------------------------------------------------------
 # DebateGenerator -- drop-in replacement for FactorGenerator
 # ---------------------------------------------------------------------------
+
 
 class DebateGenerator:
     """Multi-agent debate-based factor generator (drop-in for FactorGenerator).
@@ -564,9 +561,7 @@ class DebateGenerator:
         self.llm_provider = llm_provider
         self.config = debate_config or DebateConfig()
 
-        base_system_prompt = (
-            prompt_builder.system_prompt if prompt_builder else None
-        )
+        base_system_prompt = prompt_builder.system_prompt if prompt_builder else None
 
         # Build SpecialistAgent instances
         self._specialist_agents: list[SpecialistAgent] = []
@@ -604,11 +599,11 @@ class DebateGenerator:
         if self.config.enable_deduplication:
             try:
                 from factorminer.core.canonicalizer import FormulaCanonicalizer
+
                 self._canonicalizer = FormulaCanonicalizer()
             except Exception as exc:
                 logger.warning(
-                    "Could not initialise FormulaCanonicalizer: %s. "
-                    "Falling back to string dedup.",
+                    "Could not initialise FormulaCanonicalizer: %s. Falling back to string dedup.",
                     exc,
                 )
 
@@ -672,9 +667,7 @@ class DebateGenerator:
             self.config.candidates_per_specialist,
         )
 
-        existing_factors = normalize_factor_references(
-            library_state.get("recent_admissions", [])
-        )
+        existing_factors = normalize_factor_references(library_state.get("recent_admissions", []))
         regime_context = str(memory_signal.get("regime_context", ""))
 
         if self._orchestrator is not None:
@@ -705,9 +698,7 @@ class DebateGenerator:
                     batch_size=self.config.candidates_per_specialist,
                 )
                 proposals[spec_name] = candidates
-                logger.info(
-                    "Specialist %s produced %d candidates", spec_name, len(candidates)
-                )
+                logger.info("Specialist %s produced %d candidates", spec_name, len(candidates))
 
             result = []
             seen_formulas: set = set()
@@ -720,8 +711,7 @@ class DebateGenerator:
             result = result[:batch_size]
             # Store a minimal DebateResult for consistency
             specialist_proposals = {
-                name: [c.formula for c in cands]
-                for name, cands in proposals.items()
+                name: [c.formula for c in cands] for name, cands in proposals.items()
             }
             self._last_debate_result = DebateResult(
                 all_proposals=[f for fl in specialist_proposals.values() for f in fl],
@@ -795,24 +785,21 @@ class DebateGenerator:
 
         for spec_agent in self._specialist_agents:
             spec_admitted = [
-                f for f in admitted_formulas
-                if f in self._last_debate_result.specialist_proposals.get(
-                    spec_agent.name, []
-                )
+                f
+                for f in admitted_formulas
+                if f in self._last_debate_result.specialist_proposals.get(spec_agent.name, [])
             ]
             spec_rejected = [
-                f for f in rejected_formulas
-                if f in self._last_debate_result.specialist_proposals.get(
-                    spec_agent.name, []
-                )
+                f
+                for f in rejected_formulas
+                if f in self._last_debate_result.specialist_proposals.get(spec_agent.name, [])
             ]
             spec_reasons: list[str] = []
             for f in spec_rejected:
                 try:
                     idx = rejected_formulas.index(f)
                     spec_reasons.append(
-                        rejection_reasons[idx] if idx < len(rejection_reasons)
-                        else "unknown"
+                        rejection_reasons[idx] if idx < len(rejection_reasons) else "unknown"
                     )
                 except ValueError:
                     spec_reasons.append("unknown")
@@ -861,9 +848,7 @@ class DebateGenerator:
             for formula in debate_result.after_critic[:top_k]:
                 if formula in seen_formulas:
                     continue
-                cf = _try_build_candidate(
-                    f"debate_factor_{len(result)+1}", formula
-                )
+                cf = _try_build_candidate(f"debate_factor_{len(result) + 1}", formula)
                 if cf.is_valid:
                     result.append(cf)
                     seen_formulas.add(formula)
@@ -878,9 +863,10 @@ class DebateGenerator:
         for c in candidates:
             if not c.category.startswith("specialist:"):
                 if self._last_debate_result:
-                    for spec_name, formulas in (
-                        self._last_debate_result.specialist_proposals.items()
-                    ):
+                    for (
+                        spec_name,
+                        formulas,
+                    ) in self._last_debate_result.specialist_proposals.items():
                         if c.formula in formulas:
                             c.category = f"specialist:{spec_name}/{c.category}"
                             break
@@ -934,12 +920,15 @@ class DebateGenerator:
 # Utility
 # ---------------------------------------------------------------------------
 
+
 def _flatten_memory_signal(memory_signal: dict[str, Any]) -> str:
     """Flatten a memory signal dict to a compact string."""
     parts: list[str] = []
     for key in (
-        "recommended_directions", "strategic_insights",
-        "complementary_patterns", "prompt_text",
+        "recommended_directions",
+        "strategic_insights",
+        "complementary_patterns",
+        "prompt_text",
     ):
         val = memory_signal.get(key)
         if isinstance(val, list):

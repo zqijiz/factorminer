@@ -67,9 +67,7 @@ class EvaluationConfig:
                 "redundancy_metric must be one of: spearman, pearson, distance_correlation"
             )
         if self.signal_failure_policy not in ("reject", "synthetic", "raise"):
-            raise ValueError(
-                "signal_failure_policy must be one of: reject, synthetic, raise"
-            )
+            raise ValueError("signal_failure_policy must be one of: reject, synthetic, raise")
 
 
 @dataclass
@@ -81,16 +79,18 @@ class DataConfig:
     frequency: str = "10min"
     features: list[str] = field(
         default_factory=lambda: [
-            "$open", "$high", "$low", "$close",
-            "$volume", "$amt", "$vwap", "$returns",
+            "$open",
+            "$high",
+            "$low",
+            "$close",
+            "$volume",
+            "$amt",
+            "$vwap",
+            "$returns",
         ]
     )
-    train_period: list[str] = field(
-        default_factory=lambda: ["2024-01-01", "2024-12-31"]
-    )
-    test_period: list[str] = field(
-        default_factory=lambda: ["2025-01-01", "2025-12-31"]
-    )
+    train_period: list[str] = field(default_factory=lambda: ["2024-01-01", "2024-12-31"])
+    test_period: list[str] = field(default_factory=lambda: ["2025-01-01", "2025-12-31"])
     targets: list[dict[str, Any]] = field(
         default_factory=lambda: [
             {
@@ -160,8 +160,7 @@ class LLMConfig:
     def validate(self) -> None:
         if self.provider not in ("google", "openai", "anthropic", "mock"):
             raise ValueError(
-                f"provider must be one of: google, openai, anthropic, mock "
-                f"(got '{self.provider}')"
+                f"provider must be one of: google, openai, anthropic, mock (got '{self.provider}')"
             )
         if not (0.0 <= self.temperature <= 2.0):
             raise ValueError("temperature must be in [0, 2]")
@@ -491,9 +490,7 @@ class ResearchAdmissionConfig:
 class ResearchSelectionConfig:
     """Research-mode model configuration."""
 
-    models: list[str] = field(
-        default_factory=lambda: ["ridge", "elastic_net", "lasso", "xgboost"]
-    )
+    models: list[str] = field(default_factory=lambda: ["ridge", "elastic_net", "lasso", "xgboost"])
     rolling_train_window: int = 80
     rolling_test_window: int = 20
     rolling_step: int = 20
@@ -579,9 +576,7 @@ class ResearchConfig:
                 "single_horizon, weighted_multi_horizon, pareto_multi_horizon, net_ir"
             )
         if self.target_aggregation not in ("weighted", "pareto"):
-            raise ValueError(
-                "research.target_aggregation must be one of: weighted, pareto"
-            )
+            raise ValueError("research.target_aggregation must be one of: weighted, pareto")
         if any(weight < 0.0 for weight in self.horizon_weights.values()):
             raise ValueError("research.horizon_weights values must be >= 0")
         self.uncertainty.validate()

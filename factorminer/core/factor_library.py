@@ -116,9 +116,7 @@ class FactorLibrary:
     # Correlation computation
     # ------------------------------------------------------------------
 
-    def compute_correlation(
-        self, signals_a: np.ndarray, signals_b: np.ndarray
-    ) -> float:
+    def compute_correlation(self, signals_a: np.ndarray, signals_b: np.ndarray) -> float:
         """Compute time-average dependence rho(alpha, beta) under the active metric.
 
         By default this is the paper's mean absolute Spearman rank correlation,
@@ -166,9 +164,7 @@ class FactorLibrary:
         (admitted, reason) : Tuple[bool, str]
         """
         if candidate_ic < self.ic_threshold:
-            return False, (
-                f"IC {candidate_ic:.4f} below threshold {self.ic_threshold}"
-            )
+            return False, (f"IC {candidate_ic:.4f} below threshold {self.ic_threshold}")
 
         if self.size == 0:
             return True, "First factor in library"
@@ -181,9 +177,7 @@ class FactorLibrary:
                 f"{self.correlation_threshold} with existing library factor"
             )
 
-        return True, (
-            f"Admitted: IC={candidate_ic:.4f}, max_corr={max_corr:.4f}"
-        )
+        return True, (f"Admitted: IC={candidate_ic:.4f}, max_corr={max_corr:.4f}")
 
     def check_replacement(
         self,
@@ -218,9 +212,7 @@ class FactorLibrary:
         (should_replace, factor_to_replace_id, reason) : Tuple[bool, Optional[int], str]
         """
         if candidate_ic < ic_min:
-            return False, None, (
-                f"IC {candidate_ic:.4f} below replacement floor {ic_min}"
-            )
+            return False, None, (f"IC {candidate_ic:.4f} below replacement floor {ic_min}")
 
         if self.size == 0:
             return False, None, "Library is empty, use admission instead"
@@ -230,28 +222,38 @@ class FactorLibrary:
         for fid, factor in self.factors.items():
             if factor.signals is None:
                 continue
-            corr = self._compute_correlation_vectorized(
-                candidate_signals, factor.signals
-            )
+            corr = self._compute_correlation_vectorized(candidate_signals, factor.signals)
             if corr >= self.correlation_threshold:
                 correlated_factors.append((fid, corr, factor.ic_mean))
 
         if len(correlated_factors) != 1:
-            return False, None, (
-                f"Found {len(correlated_factors)} correlated/conflicting factors "
-                "(need exactly 1 for replacement)"
+            return (
+                False,
+                None,
+                (
+                    f"Found {len(correlated_factors)} correlated/conflicting factors "
+                    "(need exactly 1 for replacement)"
+                ),
             )
 
         fid, corr, existing_ic = correlated_factors[0]
         if candidate_ic < ic_ratio * existing_ic:
-            return False, None, (
-                f"IC {candidate_ic:.4f} < {ic_ratio} * {existing_ic:.4f} = "
-                f"{ic_ratio * existing_ic:.4f}"
+            return (
+                False,
+                None,
+                (
+                    f"IC {candidate_ic:.4f} < {ic_ratio} * {existing_ic:.4f} = "
+                    f"{ic_ratio * existing_ic:.4f}"
+                ),
             )
 
-        return True, fid, (
-            f"Replace factor {fid}: candidate IC {candidate_ic:.4f} > "
-            f"{ic_ratio} * {existing_ic:.4f}, corr={corr:.4f}"
+        return (
+            True,
+            fid,
+            (
+                f"Replace factor {fid}: candidate IC {candidate_ic:.4f} > "
+                f"{ic_ratio} * {existing_ic:.4f}, corr={corr:.4f}"
+            ),
         )
 
     # ------------------------------------------------------------------
@@ -281,8 +283,11 @@ class FactorLibrary:
 
         logger.info(
             "Admitted factor %d '%s' (IC=%.4f, max_corr=%.4f, category=%s)",
-            factor.id, factor.name, factor.ic_mean,
-            factor.max_correlation, factor.category,
+            factor.id,
+            factor.name,
+            factor.ic_mean,
+            factor.max_correlation,
+            factor.category,
         )
         return factor.id
 
@@ -320,7 +325,10 @@ class FactorLibrary:
 
         logger.info(
             "Replaced factor %d with %d '%s' (IC=%.4f)",
-            old_id, new_factor.id, new_factor.name, new_factor.ic_mean,
+            old_id,
+            new_factor.id,
+            new_factor.name,
+            new_factor.ic_mean,
         )
 
     def remove_factor(self, factor_id: int) -> None:
@@ -341,17 +349,13 @@ class FactorLibrary:
     # Correlation matrix management
     # ------------------------------------------------------------------
 
-    def _max_correlation_with_library(
-        self, candidate_signals: np.ndarray
-    ) -> float:
+    def _max_correlation_with_library(self, candidate_signals: np.ndarray) -> float:
         """Compute max |rho| between candidate and all library factors."""
         max_corr = 0.0
         for factor in self.factors.values():
             if factor.signals is None:
                 continue
-            corr = self._compute_correlation_vectorized(
-                candidate_signals, factor.signals
-            )
+            corr = self._compute_correlation_vectorized(candidate_signals, factor.signals)
             max_corr = max(max_corr, corr)
         return max_corr
 
@@ -388,9 +392,7 @@ class FactorLibrary:
             other = self.factors.get(fid)
             if other is None or other.signals is None:
                 continue
-            corr = self._compute_correlation_vectorized(
-                new_factor.signals, other.signals
-            )
+            corr = self._compute_correlation_vectorized(new_factor.signals, other.signals)
             new_mat[new_index, idx] = corr
             new_mat[idx, new_index] = corr
 
@@ -413,9 +415,7 @@ class FactorLibrary:
                 self.correlation_matrix[idx, other_idx] = 0.0
                 self.correlation_matrix[other_idx, idx] = 0.0
                 continue
-            corr = self._compute_correlation_vectorized(
-                factor.signals, other.signals
-            )
+            corr = self._compute_correlation_vectorized(factor.signals, other.signals)
             self.correlation_matrix[idx, other_idx] = corr
             self.correlation_matrix[other_idx, idx] = corr
 
@@ -469,10 +469,7 @@ class FactorLibrary:
 
     def get_factors_by_category(self, category: str) -> list[Factor]:
         """Return all factors matching a given category."""
-        return [
-            f for f in self.factors.values()
-            if f.category == category
-        ]
+        return [f for f in self.factors.values() if f.category == category]
 
     def get_diagnostics(self) -> dict:
         """Library diagnostics: avg |rho|, max tail correlations, per-category counts, saturation.
@@ -498,10 +495,7 @@ class FactorLibrary:
             cat_ic_sums[f.category] += f.ic_mean
 
         diag["category_counts"] = dict(cat_counts)
-        diag["category_avg_ic"] = {
-            cat: cat_ic_sums[cat] / cat_counts[cat]
-            for cat in cat_counts
-        }
+        diag["category_avg_ic"] = {cat: cat_ic_sums[cat] / cat_counts[cat] for cat in cat_counts}
 
         # Correlation statistics
         if self.correlation_matrix is not None and self.size > 1:
@@ -535,9 +529,7 @@ class FactorLibrary:
         Returns a lightweight dictionary suitable for inclusion in LLM prompts
         or memory store entries.
         """
-        factors_sorted = sorted(
-            self.factors.values(), key=lambda f: f.id, reverse=True
-        )
+        factors_sorted = sorted(self.factors.values(), key=lambda f: f.id, reverse=True)
         recent = factors_sorted[:5]  # Last 5 admissions
 
         categories = defaultdict(int)

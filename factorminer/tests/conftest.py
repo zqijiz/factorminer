@@ -12,6 +12,7 @@ from factorminer.memory.experience_memory import ExperienceMemoryManager
 # Mock data fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def rng():
     """Seeded random generator for reproducibility."""
@@ -76,6 +77,7 @@ def medium_data(rng):
 # Library fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def mock_library(rng):
     """Small FactorLibrary pre-loaded with 3 known factors."""
@@ -104,6 +106,7 @@ def mock_library(rng):
 # ---------------------------------------------------------------------------
 # Memory fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def mock_memory():

@@ -102,7 +102,9 @@ def test_stage_chain_executes_in_order() -> None:
         "distill": _DummyStage(distill),
     }
 
-    service.run_stage_chain(payload, ("retrieve", "generate", "evaluate", "library_update", "distill"))
+    service.run_stage_chain(
+        payload, ("retrieve", "generate", "evaluate", "library_update", "distill")
+    )
 
     assert trace == ["retrieve", "generate", "evaluate", "library_update", "distill"]
     assert payload.memory_signal == {"signal": 1}
@@ -119,7 +121,9 @@ def test_empty_generation_reason_uses_canonicalization_hint() -> None:
     payload.stage_metrics["candidates_before_canon"] = 3
 
     assert service.candidate_count(payload) == 3
-    assert service.describe_empty_generation(payload) == "all candidates removed by canonicalization"
+    assert (
+        service.describe_empty_generation(payload) == "all candidates removed by canonicalization"
+    )
 
 
 def test_log_telemetry_emits_iteration_and_factor_records() -> None:

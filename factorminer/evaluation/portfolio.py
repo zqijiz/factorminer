@@ -119,9 +119,7 @@ class PortfolioBacktester:
         q_means = [float(np.nanmean(quintile_returns[:, q])) for q in range(5)]
 
         # Monotonicity: fraction of adjacent quintile pairs in correct order
-        correct_pairs = sum(
-            1 for i in range(4) if q_means[i] < q_means[i + 1]
-        )
+        correct_pairs = sum(1 for i in range(4) if q_means[i] < q_means[i + 1])
         monotonicity = correct_pairs / 4.0
 
         return {
@@ -177,7 +175,9 @@ class PortfolioBacktester:
         results: dict[float, dict] = {}
         for cost_bps in cost_settings:
             results[cost_bps] = self.quintile_backtest(
-                combined_signal, returns, transaction_cost_bps=cost_bps,
+                combined_signal,
+                returns,
+                transaction_cost_bps=cost_bps,
             )
         return results
 
@@ -238,6 +238,7 @@ class PortfolioBacktester:
 # ------------------------------------------------------------------
 # Module-level helpers
 # ------------------------------------------------------------------
+
 
 def _rank_array(x: np.ndarray) -> np.ndarray:
     """Compute percentile ranks in [0, 1] for a 1-D array.

@@ -11,6 +11,7 @@ from factorminer.core.parser import parse, tokenize, try_parse
 # Parsing simple formulas
 # ---------------------------------------------------------------------------
 
+
 class TestParseSimple:
     """Test parsing of basic single-operator formulas."""
 
@@ -52,6 +53,7 @@ class TestParseSimple:
 # ---------------------------------------------------------------------------
 # Parsing complex nested formulas from the paper
 # ---------------------------------------------------------------------------
+
 
 class TestParseComplex:
     """Test parsing of complex nested formulas (paper factors)."""
@@ -96,6 +98,7 @@ class TestParseComplex:
 # Roundtrip: parse -> to_string -> parse
 # ---------------------------------------------------------------------------
 
+
 class TestRoundtrip:
     """Test that parse -> to_string -> parse produces identical trees."""
 
@@ -122,6 +125,7 @@ class TestRoundtrip:
 # ---------------------------------------------------------------------------
 # Expression tree evaluation with mock data
 # ---------------------------------------------------------------------------
+
 
 class TestEvaluate:
     """Test evaluate on known inputs."""
@@ -167,6 +171,7 @@ class TestEvaluate:
 # ---------------------------------------------------------------------------
 # Tree depth and size
 # ---------------------------------------------------------------------------
+
 
 class TestTreeStructure:
     """Test depth() and size() computations."""
@@ -220,6 +225,7 @@ class TestTreeStructure:
 # Error handling
 # ---------------------------------------------------------------------------
 
+
 class TestErrorHandling:
     """Test that invalid inputs raise appropriate errors."""
 
@@ -271,6 +277,7 @@ class TestErrorHandling:
 # ---------------------------------------------------------------------------
 # Tokenizer
 # ---------------------------------------------------------------------------
+
 
 class TestTokenizer:
     """Test the tokenizer separately."""

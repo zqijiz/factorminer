@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 # Configuration dataclass
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class SpecialistConfig:
     """Configuration for a domain-specialist factor generator.
@@ -218,14 +219,13 @@ DEFAULT_SPECIALISTS: list[SpecialistConfig] = [
 ]
 
 # Map from specialist name to config for convenience
-SPECIALIST_CONFIGS: dict[str, SpecialistConfig] = {
-    spec.name: spec for spec in DEFAULT_SPECIALISTS
-}
+SPECIALIST_CONFIGS: dict[str, SpecialistConfig] = {spec.name: spec for spec in DEFAULT_SPECIALISTS}
 
 
 # ---------------------------------------------------------------------------
 # SpecialistDomainMemory -- per-specialist admission tracking
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class SpecialistDomainMemory:
@@ -262,6 +262,7 @@ class SpecialistDomainMemory:
     def get_summary(self) -> str:
         """Human-readable summary of domain performance."""
         from collections import Counter
+
         lines = [
             f"Specialist: {self.specialist_name}",
             f"  Proposed: {self.total_proposed}  Admitted: {len(self.admitted)}  "
@@ -284,6 +285,7 @@ class SpecialistDomainMemory:
 # ---------------------------------------------------------------------------
 # SpecialistAgent -- proposal generation with domain memory
 # ---------------------------------------------------------------------------
+
 
 class SpecialistAgent:
     """Domain-specialist factor proposer with memory and success tracking.
@@ -437,7 +439,7 @@ class SpecialistAgent:
         if len(reasons) < len(rejected):
             reasons = reasons + ["unknown"] * (len(rejected) - len(reasons))
         self._memory.record_admitted(admitted)
-        self._memory.record_rejected(rejected, reasons[:len(rejected)])
+        self._memory.record_rejected(rejected, reasons[: len(rejected)])
 
     def get_domain_performance_summary(self) -> str:
         """Human-readable summary of what this specialist has discovered."""
@@ -453,9 +455,11 @@ class SpecialistAgent:
         enriched = dict(base_signal)
 
         base_forbidden = list(enriched.get("forbidden_directions", []))
-        enriched["forbidden_directions"] = base_forbidden + [
-            f"[{self.name} domain] Avoid: {p}" for p in self.config.avoid
-        ] + forbidden_patterns
+        enriched["forbidden_directions"] = (
+            base_forbidden
+            + [f"[{self.name} domain] Avoid: {p}" for p in self.config.avoid]
+            + forbidden_patterns
+        )
 
         if self.config.example_factors:
             existing_insights = list(enriched.get("strategic_insights", []))
@@ -469,9 +473,7 @@ class SpecialistAgent:
             existing_prompt = enriched.get("prompt_text", "")
             regime_note = f"[Regime context] {regime_context}"
             enriched["prompt_text"] = (
-                regime_note + "\n" + existing_prompt
-                if existing_prompt
-                else regime_note
+                regime_note + "\n" + existing_prompt if existing_prompt else regime_note
             )
 
         if self._memory.total_proposed > 0:
@@ -490,6 +492,7 @@ class SpecialistAgent:
 # ---------------------------------------------------------------------------
 # SpecialistPromptBuilder -- extends PromptBuilder with domain directives
 # ---------------------------------------------------------------------------
+
 
 class SpecialistPromptBuilder(PromptBuilder):
     """Prompt builder that injects domain-specific specialist directives.
@@ -516,16 +519,8 @@ class SpecialistPromptBuilder(PromptBuilder):
         suffix = specialist_config.system_prompt_suffix
         hypothesis_block = ""
         if specialist_config.hypothesis:
-            hypothesis_block = (
-                f"\n\n## DOMAIN HYPOTHESIS\n"
-                f"{specialist_config.hypothesis}"
-            )
-        modified_system = (
-            f"{base}\n\n"
-            f"## SPECIALIST DOMAIN DIRECTIVE\n"
-            f"{suffix}"
-            f"{hypothesis_block}"
-        )
+            hypothesis_block = f"\n\n## DOMAIN HYPOTHESIS\n{specialist_config.hypothesis}"
+        modified_system = f"{base}\n\n## SPECIALIST DOMAIN DIRECTIVE\n{suffix}{hypothesis_block}"
         super().__init__(system_prompt=modified_system)
         self._specialist = specialist_config
 

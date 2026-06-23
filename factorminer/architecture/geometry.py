@@ -77,9 +77,7 @@ class LibraryGeometry:
         candidate_signals: np.ndarray,
     ) -> tuple[bool, str]:
         if candidate_ic < self.library.ic_threshold:
-            return False, (
-                f"IC {candidate_ic:.4f} below threshold {self.library.ic_threshold}"
-            )
+            return False, (f"IC {candidate_ic:.4f} below threshold {self.library.ic_threshold}")
 
         if self.library.size == 0:
             return True, "First factor in library"
@@ -109,17 +107,25 @@ class LibraryGeometry:
 
         geometry = self.candidate_geometry(candidate_signals)
         if len(geometry.correlated_factor_ids) != 1:
-            return False, None, (
-                "Replacement requires exactly 1 conflicting library factor, "
-                f"found {len(geometry.correlated_factor_ids)}"
+            return (
+                False,
+                None,
+                (
+                    "Replacement requires exactly 1 conflicting library factor, "
+                    f"found {len(geometry.correlated_factor_ids)}"
+                ),
             )
 
         target_id = geometry.correlated_factor_ids[0]
         target_factor = self.library.get_factor(target_id)
         if candidate_ic < ic_ratio * target_factor.ic_mean:
-            return False, None, (
-                f"IC {candidate_ic:.4f} insufficient to replace factor {target_id} "
-                f"(needs >= {ic_ratio} * {target_factor.ic_mean:.4f})"
+            return (
+                False,
+                None,
+                (
+                    f"IC {candidate_ic:.4f} insufficient to replace factor {target_id} "
+                    f"(needs >= {ic_ratio} * {target_factor.ic_mean:.4f})"
+                ),
             )
 
         return True, target_id, f"Replacement over factor {target_id}"

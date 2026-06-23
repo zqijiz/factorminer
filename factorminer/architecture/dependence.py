@@ -6,7 +6,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 import numpy as np
-from scipy.stats import rankdata
+import pandas as pd
+import pandas as pd
 
 
 def _iter_valid_columns(
@@ -14,9 +15,7 @@ def _iter_valid_columns(
     signals_b: np.ndarray,
 ):
     if signals_a.shape != signals_b.shape:
-        raise ValueError(
-            f"Signal shapes must match: {signals_a.shape} vs {signals_b.shape}"
-        )
+        raise ValueError(f"Signal shapes must match: {signals_a.shape} vs {signals_b.shape}")
 
     _, periods = signals_a.shape
     for period in range(periods):
@@ -80,7 +79,12 @@ class SpearmanDependenceMetric(DependenceMetric):
     def compute(self, signals_a: np.ndarray, signals_b: np.ndarray) -> float:
         scores: list[float] = []
         for col_a, col_b in _iter_valid_columns(signals_a, signals_b):
-            scores.append(_pearson_abs(rankdata(col_a), rankdata(col_b)))
+            scores.append(
+                _pearson_abs(
+                    pd.Series(col_a).rank(method="average", na_option="keep").to_numpy(),
+                    pd.Series(col_b).rank(method="average", na_option="keep").to_numpy(),
+                )
+            )
         if not scores:
             return 0.0
         return float(np.mean(scores))

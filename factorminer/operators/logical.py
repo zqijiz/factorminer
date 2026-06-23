@@ -18,6 +18,7 @@ except ImportError:
 # NumPy implementations
 # ===========================================================================
 
+
 def if_else_np(cond: np.ndarray, x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """Where cond > 0 return x, else y.  NaN in cond -> NaN."""
     result = np.where(cond > 0, x, y)
@@ -94,6 +95,7 @@ def ne_np(x: np.ndarray, y: np.ndarray) -> np.ndarray:
 # ===========================================================================
 # PyTorch implementations
 # ===========================================================================
+
 
 def if_else_torch(cond: torch.Tensor, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     result = torch.where(cond > 0, x, y)

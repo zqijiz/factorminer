@@ -89,7 +89,7 @@ def _bars_per_year(freq: Frequency) -> float:
     """Approximate number of bars in a trading year."""
     trading_days = 252
     bars_per_day = {
-        "10min": 24,   # 4h session / 10min
+        "10min": 24,  # 4h session / 10min
         "30min": 8,
         "1h": 4,
         "1d": 1,
@@ -177,7 +177,9 @@ def generate_mock_data(config: MockConfig | None = None) -> pd.DataFrame:
 
     # Planted alpha: select a subset of assets
     n_alpha = max(1, int(M * config.alpha_assets_frac))
-    alpha_assets = set(rng.choice(M, size=n_alpha, replace=False).tolist()) if config.plant_alpha else set()
+    alpha_assets = (
+        set(rng.choice(M, size=n_alpha, replace=False).tolist()) if config.plant_alpha else set()
+    )
 
     for i in range(M):
         # Initial price with some dispersion
@@ -257,16 +259,18 @@ def generate_mock_data(config: MockConfig | None = None) -> pd.DataFrame:
     # ---------------------------------------------------------------
     records = []
     for i in range(M):
-        asset_df = pd.DataFrame({
-            "datetime": timestamps,
-            "asset_id": asset_ids[i],
-            "open": all_open[i],
-            "high": all_high[i],
-            "low": all_low[i],
-            "close": all_close[i],
-            "volume": all_volume[i],
-            "amount": all_amount[i],
-        })
+        asset_df = pd.DataFrame(
+            {
+                "datetime": timestamps,
+                "asset_id": asset_ids[i],
+                "open": all_open[i],
+                "high": all_high[i],
+                "low": all_low[i],
+                "close": all_close[i],
+                "volume": all_volume[i],
+                "amount": all_amount[i],
+            }
+        )
         records.append(asset_df)
 
     df = pd.concat(records, ignore_index=True)

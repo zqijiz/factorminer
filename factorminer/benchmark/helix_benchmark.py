@@ -40,6 +40,7 @@ def _warn_legacy_runtime() -> None:
 # Serialization helpers
 # ---------------------------------------------------------------------------
 
+
 def _json_safe(value: Any) -> Any:
     """Recursively convert a structure into JSON-safe primitives."""
     if isinstance(value, dict):
@@ -58,6 +59,7 @@ def _json_safe(value: Any) -> Any:
 # ---------------------------------------------------------------------------
 # Result containers
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class MethodResult:
@@ -96,7 +98,7 @@ class DMTestResult:
     dm_statistic: float
     p_value: float
     is_significant: bool
-    direction: str   # "helix_better", "ralph_better", "no_difference"
+    direction: str  # "helix_better", "ralph_better", "no_difference"
     n_obs: int
 
 
@@ -119,7 +121,7 @@ class AblationResult:
 class OperatorSpeedResult:
     """Timing for individual operators."""
 
-    operator_timings_ms: dict[str, float]   # operator_name -> ms
+    operator_timings_ms: dict[str, float]  # operator_name -> ms
     n_assets: int
     n_periods: int
     n_repeats: int
@@ -139,9 +141,9 @@ class BenchmarkResult:
     """Aggregate benchmark results — all methods, all metrics."""
 
     methods: list[str]
-    factor_library_metrics: pd.DataFrame    # IC, ICIR, Avg|rho| per method
-    combination_metrics: pd.DataFrame       # EW/ICW IC and ICIR
-    selection_metrics: pd.DataFrame         # LASSO, XGBoost
+    factor_library_metrics: pd.DataFrame  # IC, ICIR, Avg|rho| per method
+    combination_metrics: pd.DataFrame  # EW/ICW IC and ICIR
+    selection_metrics: pd.DataFrame  # LASSO, XGBoost
     speed_metrics: pd.DataFrame
     statistical_tests: dict[str, Any]
     ablation_result: AblationResult | None = None
@@ -171,15 +173,9 @@ class BenchmarkResult:
         ]
 
         for method in self.methods:
-            lib_row = self.factor_library_metrics[
-                self.factor_library_metrics["method"] == method
-            ]
-            comb_row = self.combination_metrics[
-                self.combination_metrics["method"] == method
-            ]
-            sel_row = self.selection_metrics[
-                self.selection_metrics["method"] == method
-            ]
+            lib_row = self.factor_library_metrics[self.factor_library_metrics["method"] == method]
+            comb_row = self.combination_metrics[self.combination_metrics["method"] == method]
+            sel_row = self.selection_metrics[self.selection_metrics["method"] == method]
 
             def _g(df, col, mult=100.0):
                 if df.empty or col not in df.columns:
@@ -234,15 +230,9 @@ class BenchmarkResult:
         )
         rows = []
         for method in self.methods:
-            lib_row = self.factor_library_metrics[
-                self.factor_library_metrics["method"] == method
-            ]
-            comb_row = self.combination_metrics[
-                self.combination_metrics["method"] == method
-            ]
-            sel_row = self.selection_metrics[
-                self.selection_metrics["method"] == method
-            ]
+            lib_row = self.factor_library_metrics[self.factor_library_metrics["method"] == method]
+            comb_row = self.combination_metrics[self.combination_metrics["method"] == method]
+            sel_row = self.selection_metrics[self.selection_metrics["method"] == method]
 
             def _g(df, col):
                 if df.empty or col not in df.columns:
@@ -253,15 +243,15 @@ class BenchmarkResult:
             tag = " **" if method == "helix_phase2" else ""
             rows.append(
                 f"| {method}{tag} | "
-                f"{_g(lib_row,'ic_pct'):.2f} | "
-                f"{_g(lib_row,'icir'):.3f} | "
-                f"{_g(lib_row,'avg_abs_rho'):.3f} | "
-                f"{_g(comb_row,'ew_ic_pct'):.2f} | "
-                f"{_g(comb_row,'ew_icir'):.3f} | "
-                f"{_g(comb_row,'icw_ic_pct'):.2f} | "
-                f"{_g(comb_row,'icw_icir'):.3f} | "
-                f"{_g(sel_row,'lasso_ic_pct'):.2f} | "
-                f"{_g(sel_row,'xgb_ic_pct'):.2f} |\n"
+                f"{_g(lib_row, 'ic_pct'):.2f} | "
+                f"{_g(lib_row, 'icir'):.3f} | "
+                f"{_g(lib_row, 'avg_abs_rho'):.3f} | "
+                f"{_g(comb_row, 'ew_ic_pct'):.2f} | "
+                f"{_g(comb_row, 'ew_icir'):.3f} | "
+                f"{_g(comb_row, 'icw_ic_pct'):.2f} | "
+                f"{_g(comb_row, 'icw_icir'):.3f} | "
+                f"{_g(sel_row, 'lasso_ic_pct'):.2f} | "
+                f"{_g(sel_row, 'xgb_ic_pct'):.2f} |\n"
             )
         return header + "".join(rows)
 
@@ -304,14 +294,10 @@ class BenchmarkResult:
                     ]
                     v = float(row["icir"].iloc[0]) if not row.empty else 0.0
                 elif metric == "EW IC (%)":
-                    row = self.combination_metrics[
-                        self.combination_metrics["method"] == method
-                    ]
+                    row = self.combination_metrics[self.combination_metrics["method"] == method]
                     v = float(row["ew_ic_pct"].iloc[0]) if not row.empty else 0.0
                 elif metric == "ICW IC (%)":
-                    row = self.combination_metrics[
-                        self.combination_metrics["method"] == method
-                    ]
+                    row = self.combination_metrics[self.combination_metrics["method"] == method]
                     v = float(row["icw_ic_pct"].iloc[0]) if not row.empty else 0.0
                 else:
                     v = 0.0
@@ -352,7 +338,9 @@ class BenchmarkResult:
             turnover_html = self.turnover_metrics.to_html(index=False, float_format="{:.4f}".format)
         cost_html = ""
         if not self.cost_pressure_metrics.empty:
-            cost_html = self.cost_pressure_metrics.to_html(index=False, float_format="{:.4f}".format)
+            cost_html = self.cost_pressure_metrics.to_html(
+                index=False, float_format="{:.4f}".format
+            )
 
         stat_rows = []
         for k, v in self.statistical_tests.items():
@@ -369,11 +357,8 @@ class BenchmarkResult:
 
         ablation_html = ""
         if self.ablation_result is not None and self.ablation_result.contributions is not None:
-            ablation_html = (
-                "<h2>Ablation Study</h2>"
-                + self.ablation_result.contributions.to_html(
-                    index=False, float_format="{:.4f}".format
-                )
+            ablation_html = "<h2>Ablation Study</h2>" + self.ablation_result.contributions.to_html(
+                index=False, float_format="{:.4f}".format
             )
 
         css = """
@@ -402,8 +387,8 @@ class BenchmarkResult:
 <h2>Factor Combination Metrics</h2>{comb_html}
 <h2>Factor Selection Metrics</h2>{sel_html}
 <h2>Speed Benchmarks</h2>{speed_html}
-{f'<h2>Turnover</h2>{turnover_html}' if turnover_html else ''}
-{f'<h2>Cost Pressure</h2>{cost_html}' if cost_html else ''}
+{f"<h2>Turnover</h2>{turnover_html}" if turnover_html else ""}
+{f"<h2>Cost Pressure</h2>{cost_html}" if cost_html else ""}
 <h2>Statistical Tests</h2>{stat_html}
 {ablation_html}
 </body></html>"""
@@ -412,6 +397,7 @@ class BenchmarkResult:
 # ---------------------------------------------------------------------------
 # Statistical tests
 # ---------------------------------------------------------------------------
+
 
 class StatisticalComparisonTests:
     """Rigorous statistical comparison between HelixFactor and FactorMiner.
@@ -469,12 +455,15 @@ class StatisticalComparisonTests:
         min_len = len(s1)
         if min_len < 5:
             return DMTestResult(
-                dm_statistic=0.0, p_value=1.0, is_significant=False,
-                direction="no_difference", n_obs=min_len,
+                dm_statistic=0.0,
+                p_value=1.0,
+                is_significant=False,
+                direction="no_difference",
+                n_obs=min_len,
             )
 
         # Loss differential: squared-error loss on IC as forecast of return
-        d = s1 ** 2 - s2 ** 2
+        d = s1**2 - s2**2
         T = len(d)
         if np.allclose(d, 0.0):
             return DMTestResult(
@@ -499,9 +488,7 @@ class StatisticalComparisonTests:
             )
         hac_var = gamma_0
         for lag in range(1, bandwidth + 1):
-            gamma_k = np.mean(
-                (d[lag:] - d_bar) * (d[:-lag] - d_bar)
-            )
+            gamma_k = np.mean((d[lag:] - d_bar) * (d[:-lag] - d_bar))
             hac_var += 2.0 * (1.0 - lag / (bandwidth + 1)) * gamma_k
 
         if hac_var <= 0 or np.isnan(hac_var):
@@ -525,6 +512,7 @@ class StatisticalComparisonTests:
 
         # Two-sided p-value using normal approximation
         from scipy.stats import norm
+
         p_value = 2.0 * (1.0 - float(norm.cdf(abs(dm_stat))))
         if not np.isfinite(p_value):
             return DMTestResult(
@@ -607,9 +595,7 @@ class StatisticalComparisonTests:
 
         for i in range(n_bootstrap):
             starts = self._rng.randint(0, n - block_size + 1, size=n_blocks)
-            indices = np.concatenate(
-                [np.arange(s, s + block_size) for s in starts]
-            )[:n]
+            indices = np.concatenate([np.arange(s, s + block_size) for s in starts])[:n]
             boot_means[i] = diff[indices].mean()
 
         return (
@@ -678,6 +664,7 @@ class StatisticalComparisonTests:
 # Speed Benchmark
 # ---------------------------------------------------------------------------
 
+
 class SpeedBenchmark:
     """Benchmark factor evaluation speed across operators and pipelines."""
 
@@ -712,38 +699,33 @@ class SpeedBenchmark:
         X = rng.randn(n_assets, n_periods).astype(np.float64)
         Y = rng.randn(n_assets, n_periods).astype(np.float64)
 
-        from scipy.stats import rankdata
-
         def _ts_rank(mat, window=20):
             out = np.full_like(mat, np.nan)
             for t in range(window - 1, mat.shape[1]):
-                slc = mat[:, t - window + 1: t + 1]
+                slc = mat[:, t - window + 1 : t + 1]
                 for i in range(mat.shape[0]):
-                    r = rankdata(slc[i])
+                    r = pd.Series(slc[i]).rank(method="average", na_option="keep").to_numpy()
                     out[i, t] = r[-1] / window
             return out
 
         def _cs_rank(mat):
-            out = np.full_like(mat, np.nan)
-            for t in range(mat.shape[1]):
-                col = mat[:, t]
-                valid = ~np.isnan(col)
-                if valid.sum() > 0:
-                    out[valid, t] = rankdata(col[valid]) / valid.sum()
-            return out
+            ranked = pd.DataFrame(mat).rank(axis=0, method="average", na_option="keep").to_numpy()
+            valid_counts = np.sum(~np.isnan(mat), axis=0)
+            with np.errstate(divide="ignore", invalid="ignore"):
+                return ranked / valid_counts
 
         def _ts_std(mat, window=20):
             out = np.full_like(mat, np.nan)
             for t in range(window - 1, mat.shape[1]):
-                slc = mat[:, t - window + 1: t + 1]
+                slc = mat[:, t - window + 1 : t + 1]
                 out[:, t] = np.std(slc, axis=1, ddof=1)
             return out
 
         def _ts_corr(x, y, window=20):
             out = np.full_like(x, np.nan)
             for t in range(window - 1, x.shape[1]):
-                sx = x[:, t - window + 1: t + 1]
-                sy = y[:, t - window + 1: t + 1]
+                sx = x[:, t - window + 1 : t + 1]
+                sy = y[:, t - window + 1 : t + 1]
                 xs = sx - sx.mean(axis=1, keepdims=True)
                 ys = sy - sy.mean(axis=1, keepdims=True)
                 denom = np.sqrt((xs**2).sum(axis=1) * (ys**2).sum(axis=1))
@@ -760,7 +742,9 @@ class SpeedBenchmark:
             "CsRank": lambda: _cs_rank(X_s),
             "TsStd(w=20)": lambda: _ts_std(X_s, window=20),
             "TsCorr(w=20)": lambda: _ts_corr(X_s, Y_s, window=20),
-            "TsMean(w=20)": lambda: np.lib.stride_tricks.sliding_window_view(X_s, 20, axis=1).mean(axis=-1),
+            "TsMean(w=20)": lambda: np.lib.stride_tricks.sliding_window_view(X_s, 20, axis=1).mean(
+                axis=-1
+            ),
             "CsZscore": lambda: (X_s - X_s.mean(axis=0)) / (X_s.std(axis=0) + 1e-8),
         }
 
@@ -840,9 +824,7 @@ class SpeedBenchmark:
             rf"Full pipeline ({pipeline_result.n_candidates} candidates) & "
             rf"{pipeline_result.total_seconds * 1000:.0f} & -- \\"
         )
-        lines.append(
-            rf"Throughput & {pipeline_result.candidates_per_second:.1f} cand/s & -- \\"
-        )
+        lines.append(rf"Throughput & {pipeline_result.candidates_per_second:.1f} cand/s & -- \\")
         lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}"]
         return "\n".join(lines)
 
@@ -850,6 +832,7 @@ class SpeedBenchmark:
 # ---------------------------------------------------------------------------
 # Main HelixBenchmark
 # ---------------------------------------------------------------------------
+
 
 class HelixBenchmark:
     """Rigorous comparison of HelixFactor vs FactorMiner (and baselines).
@@ -950,16 +933,11 @@ class HelixBenchmark:
                     method_runs.append(result)
                 except Exception as exc:
                     logger.warning("Method %s run %d failed: %s", method, run_id, exc)
-                    method_runs.append(
-                        MethodResult(method=method, run_id=run_id)
-                    )
+                    method_runs.append(MethodResult(method=method, run_id=run_id))
             raw_results[method] = method_runs
 
         # Average across runs
-        averaged = {
-            method: _average_method_results(runs)
-            for method, runs in raw_results.items()
-        }
+        averaged = {method: _average_method_results(runs) for method, runs in raw_results.items()}
 
         # Build metric DataFrames
         lib_df = _build_library_df(averaged, methods)
@@ -1042,8 +1020,7 @@ class HelixBenchmark:
 
         # Compute library metrics on test data
         test_factor_results = self._evaluate_candidates(
-            [(r["name"], r["formula"], r.get("category", "Unknown"))
-             for r in library],
+            [(r["name"], r["formula"], r.get("category", "Unknown")) for r in library],
             test_data,
             test_returns,
         )
@@ -1099,6 +1076,7 @@ class HelixBenchmark:
         import importlib.util as _ilu
         import pathlib as _pl
         import sys as _sys
+
         _cat_path = _pl.Path(__file__).parent / "catalogs.py"
         if "factorminer.benchmark.catalogs" not in _sys.modules:
             _spec = _ilu.spec_from_file_location("factorminer.benchmark.catalogs", str(_cat_path))
@@ -1161,16 +1139,18 @@ class HelixBenchmark:
                 ic_mean = compute_ic_mean(ic_series)
                 icir = compute_icir(ic_series)
                 win_rate = compute_ic_win_rate(ic_series)
-                results.append({
-                    "name": name,
-                    "formula": formula,
-                    "category": category,
-                    "ic_mean": ic_mean,
-                    "icir": icir,
-                    "ic_win_rate": win_rate,
-                    "signals": signals,
-                    "ic_series": ic_series,
-                })
+                results.append(
+                    {
+                        "name": name,
+                        "formula": formula,
+                        "category": category,
+                        "ic_mean": ic_mean,
+                        "icir": icir,
+                        "ic_win_rate": win_rate,
+                        "signals": signals,
+                        "ic_series": ic_series,
+                    }
+                )
             except Exception:
                 pass
         return results
@@ -1194,14 +1174,9 @@ class HelixBenchmark:
             # Correlation check
             too_correlated = False
             for existing in library:
-                if (
-                    existing.get("signals") is not None
-                    and candidate.get("signals") is not None
-                ):
+                if existing.get("signals") is not None and candidate.get("signals") is not None:
                     corr = abs(
-                        compute_pairwise_correlation(
-                            candidate["signals"], existing["signals"]
-                        )
+                        compute_pairwise_correlation(candidate["signals"], existing["signals"])
                     )
                     if corr >= self.correlation_threshold:
                         too_correlated = True
@@ -1230,9 +1205,7 @@ class HelixBenchmark:
 
         # Average pairwise |rho|
         rhos = []
-        signals_list = [
-            r["signals"] for r in factor_results if r.get("signals") is not None
-        ]
+        signals_list = [r["signals"] for r in factor_results if r.get("signals") is not None]
         for i in range(len(signals_list)):
             for j in range(i + 1, len(signals_list)):
                 c = abs(compute_pairwise_correlation(signals_list[i], signals_list[j]))
@@ -1243,9 +1216,7 @@ class HelixBenchmark:
         all_ic_series = [r["ic_series"] for r in factor_results if r.get("ic_series") is not None]
         if all_ic_series:
             min_len = min(len(s) for s in all_ic_series)
-            combined = np.nanmean(
-                np.stack([s[:min_len] for s in all_ic_series], axis=0), axis=0
-            )
+            combined = np.nanmean(np.stack([s[:min_len] for s in all_ic_series], axis=0), axis=0)
         else:
             combined = None
 
@@ -1265,12 +1236,11 @@ class HelixBenchmark:
             return 0.0, 0.0, 0.0, 0.0
 
         factor_signals = {
-            i: r["signals"].T for i, r in enumerate(test_factor_results)
+            i: r["signals"].T
+            for i, r in enumerate(test_factor_results)
             if r.get("signals") is not None
         }
-        ic_values = {
-            i: r["ic_mean"] for i, r in enumerate(test_factor_results)
-        }
+        ic_values = {i: r["ic_mean"] for i, r in enumerate(test_factor_results)}
 
         if not factor_signals:
             return 0.0, 0.0, 0.0, 0.0
@@ -1312,7 +1282,8 @@ class HelixBenchmark:
             return 0.0, 0.0
 
         fit_signals = {
-            i: r["signals"].T for i, r in enumerate(train_factor_results)
+            i: r["signals"].T
+            for i, r in enumerate(train_factor_results)
             if r.get("signals") is not None
         }
         if not fit_signals:
@@ -1320,13 +1291,13 @@ class HelixBenchmark:
 
         # Re-evaluate on test data
         test_results = self._evaluate_candidates(
-            [(r["name"], r["formula"], r.get("category", "Unknown"))
-             for r in train_factor_results],
+            [(r["name"], r["formula"], r.get("category", "Unknown")) for r in train_factor_results],
             test_data,
             test_returns,
         )
         eval_signals = {
-            i: r["signals"].T for i, r in enumerate(test_results)
+            i: r["signals"].T
+            for i, r in enumerate(test_results)
             if r.get("signals") is not None and i < len(test_results)
         }
 
@@ -1424,9 +1395,7 @@ class HelixBenchmark:
         from factorminer.agent.debate import DebateConfig as RuntimeDebateConfig
         from factorminer.agent.specialists import DEFAULT_SPECIALISTS
 
-        specialist_count = min(
-            int(cfg.phase2.debate.num_specialists), len(DEFAULT_SPECIALISTS)
-        )
+        specialist_count = min(int(cfg.phase2.debate.num_specialists), len(DEFAULT_SPECIALISTS))
         return RuntimeDebateConfig(
             specialists=list(DEFAULT_SPECIALISTS[:specialist_count]),
             enable_critic=cfg.phase2.debate.enable_critic,
@@ -1449,9 +1418,7 @@ class HelixBenchmark:
         def _clone_section(source, target_cls):
             target_fields = {field.name for field in target_cls.__dataclass_fields__.values()}
             payload = {
-                name: getattr(source, name)
-                for name in target_fields
-                if hasattr(source, name)
+                name: getattr(source, name) for name in target_fields if hasattr(source, name)
             }
             return target_cls(**payload)
 
@@ -1511,9 +1478,7 @@ class HelixBenchmark:
             "llm_provider": provider,
         }
         if loop_kind == "helix_phase2":
-            runtime_kwargs.update(
-                self._runtime_phase2_kwargs(cfg, loop_kind, runtime_dataset)
-            )
+            runtime_kwargs.update(self._runtime_phase2_kwargs(cfg, loop_kind, runtime_dataset))
             loop = HelixLoop(**runtime_kwargs)
         else:
             loop = RalphLoop(**runtime_kwargs)
@@ -1571,14 +1536,18 @@ class HelixBenchmark:
                     axis=0,
                 )
 
-        library_turnover = float(
-            np.mean(
-                [
-                    artifact.split_stats["test"].get("turnover", 0.0)
-                    for artifact in selected_artifacts
-                ]
+        library_turnover = (
+            float(
+                np.mean(
+                    [
+                        artifact.split_stats["test"].get("turnover", 0.0)
+                        for artifact in selected_artifacts
+                    ]
+                )
             )
-        ) if selected_artifacts else 0.0
+            if selected_artifacts
+            else 0.0
+        )
 
         combination_turnover = {
             name: float(metrics.get("turnover", 0.0))
@@ -1616,7 +1585,9 @@ class HelixBenchmark:
             "session_log": str((output_dir / "session_log.json").resolve()),
             "library": str((output_dir / "factor_library.json").resolve()),
             "checkpoint_dir": str((output_dir / "checkpoint").resolve()),
-            "checkpoint_run_manifest": str((output_dir / "checkpoint" / "run_manifest.json").resolve()),
+            "checkpoint_run_manifest": str(
+                (output_dir / "checkpoint" / "run_manifest.json").resolve()
+            ),
         }
         payload = {
             "loop_kind": loop_kind,
@@ -1763,10 +1734,7 @@ class HelixBenchmark:
                     method_runs.append(result)
             raw_results[method] = method_runs
 
-        averaged = {
-            method: _average_method_results(runs)
-            for method, runs in raw_results.items()
-        }
+        averaged = {method: _average_method_results(runs) for method, runs in raw_results.items()}
 
         lib_df = _build_library_df(averaged, methods)
         comb_df = _build_combination_df(averaged, methods)
@@ -1785,12 +1753,8 @@ class HelixBenchmark:
             if h_ic is not None and r_ic is not None:
                 stat_tests = self._stat_tests.run_all_tests(h_ic, r_ic)
             else:
-                h_ic = _synthetic_ic_series(
-                    helix_results[0].library_ic, n=100, seed=self.seed
-                )
-                r_ic = _synthetic_ic_series(
-                    ralph_results[0].library_ic, n=100, seed=self.seed + 1
-                )
+                h_ic = _synthetic_ic_series(helix_results[0].library_ic, n=100, seed=self.seed)
+                r_ic = _synthetic_ic_series(ralph_results[0].library_ic, n=100, seed=self.seed + 1)
                 stat_tests = self._stat_tests.run_all_tests(h_ic, r_ic)
 
         runtime_artifacts = {
@@ -1915,6 +1879,7 @@ class HelixBenchmark:
 # Helper functions
 # ---------------------------------------------------------------------------
 
+
 def _build_mock_data_dict(
     n_assets: int = 100,
     n_periods: int = 500,
@@ -1940,16 +1905,19 @@ def _build_mock_data_dict(
     T = processed.groupby("asset_id").size().min()
 
     feature_map = {
-        "$open": "open", "$high": "high", "$low": "low", "$close": "close",
-        "$volume": "volume", "$amt": "amount", "$vwap": "vwap",
+        "$open": "open",
+        "$high": "high",
+        "$low": "low",
+        "$close": "close",
+        "$volume": "volume",
+        "$amt": "amount",
+        "$vwap": "vwap",
         "$returns": "returns",
     }
     data_dict: dict = {}
     for feat_name, col_name in feature_map.items():
         if col_name in processed.columns:
-            pivot = processed.pivot(
-                index="asset_id", columns="datetime", values=col_name
-            )
+            pivot = processed.pivot(index="asset_id", columns="datetime", values=col_name)
             pivot = pivot.loc[assets].iloc[:, :T]
             data_dict[feat_name] = pivot.values.astype(np.float64)
 
@@ -1973,10 +1941,21 @@ def _average_method_results(runs: list[MethodResult]) -> MethodResult:
         return runs[0]
 
     fields = [
-        "library_ic", "library_icir", "avg_abs_rho",
-        "ew_ic", "ew_icir", "icw_ic", "icw_icir",
-        "lasso_ic", "lasso_icir", "xgb_ic", "xgb_icir",
-        "n_factors", "admission_rate", "elapsed_seconds", "avg_turnover",
+        "library_ic",
+        "library_icir",
+        "avg_abs_rho",
+        "ew_ic",
+        "ew_icir",
+        "icw_ic",
+        "icw_icir",
+        "lasso_ic",
+        "lasso_icir",
+        "xgb_ic",
+        "xgb_icir",
+        "n_factors",
+        "admission_rate",
+        "elapsed_seconds",
+        "avg_turnover",
     ]
     avg = MethodResult(method=runs[0].method)
     for f in fields:
@@ -1986,53 +1965,53 @@ def _average_method_results(runs: list[MethodResult]) -> MethodResult:
     return avg
 
 
-def _build_library_df(
-    averaged: dict[str, MethodResult], methods: list[str]
-) -> pd.DataFrame:
+def _build_library_df(averaged: dict[str, MethodResult], methods: list[str]) -> pd.DataFrame:
     rows = []
     for method in methods:
         r = averaged.get(method, MethodResult(method=method))
-        rows.append({
-            "method": method,
-            "ic_pct": r.library_ic * 100,
-            "icir": r.library_icir,
-            "avg_abs_rho": r.avg_abs_rho,
-            "n_factors": r.n_factors,
-            "avg_turnover": r.avg_turnover,
-        })
+        rows.append(
+            {
+                "method": method,
+                "ic_pct": r.library_ic * 100,
+                "icir": r.library_icir,
+                "avg_abs_rho": r.avg_abs_rho,
+                "n_factors": r.n_factors,
+                "avg_turnover": r.avg_turnover,
+            }
+        )
     return pd.DataFrame(rows)
 
 
-def _build_combination_df(
-    averaged: dict[str, MethodResult], methods: list[str]
-) -> pd.DataFrame:
+def _build_combination_df(averaged: dict[str, MethodResult], methods: list[str]) -> pd.DataFrame:
     rows = []
     for method in methods:
         r = averaged.get(method, MethodResult(method=method))
-        rows.append({
-            "method": method,
-            "ew_ic_pct": r.ew_ic * 100,
-            "ew_icir": r.ew_icir,
-            "icw_ic_pct": r.icw_ic * 100,
-            "icw_icir": r.icw_icir,
-        })
+        rows.append(
+            {
+                "method": method,
+                "ew_ic_pct": r.ew_ic * 100,
+                "ew_icir": r.ew_icir,
+                "icw_ic_pct": r.icw_ic * 100,
+                "icw_icir": r.icw_icir,
+            }
+        )
     return pd.DataFrame(rows)
 
 
-def _build_selection_df(
-    averaged: dict[str, MethodResult], methods: list[str]
-) -> pd.DataFrame:
+def _build_selection_df(averaged: dict[str, MethodResult], methods: list[str]) -> pd.DataFrame:
     rows = []
     for method in methods:
         r = averaged.get(method, MethodResult(method=method))
-        rows.append({
-            "method": method,
-            "lasso_ic_pct": r.lasso_ic * 100,
-            "lasso_icir": r.lasso_icir,
-            "xgb_ic_pct": r.xgb_ic * 100,
-            "xgb_icir": r.xgb_icir,
-            "best_ic_pct": max(r.lasso_ic, r.xgb_ic) * 100,
-        })
+        rows.append(
+            {
+                "method": method,
+                "lasso_ic_pct": r.lasso_ic * 100,
+                "lasso_icir": r.lasso_icir,
+                "xgb_ic_pct": r.xgb_ic * 100,
+                "xgb_icir": r.xgb_icir,
+                "best_ic_pct": max(r.lasso_ic, r.xgb_ic) * 100,
+            }
+        )
     return pd.DataFrame(rows)
 
 
@@ -2043,16 +2022,20 @@ def _build_speed_df(
     rows = []
     for op, ms in op_result.operator_timings_ms.items():
         rows.append({"name": op, "time_ms": ms, "type": "operator"})
-    rows.append({
-        "name": f"Pipeline ({pipeline_result.n_candidates} cands)",
-        "time_ms": pipeline_result.total_seconds * 1000,
-        "type": "pipeline",
-    })
-    rows.append({
-        "name": "Throughput (cands/s)",
-        "time_ms": pipeline_result.candidates_per_second,
-        "type": "throughput",
-    })
+    rows.append(
+        {
+            "name": f"Pipeline ({pipeline_result.n_candidates} cands)",
+            "time_ms": pipeline_result.total_seconds * 1000,
+            "type": "pipeline",
+        }
+    )
+    rows.append(
+        {
+            "name": "Throughput (cands/s)",
+            "time_ms": pipeline_result.candidates_per_second,
+            "type": "throughput",
+        }
+    )
     return pd.DataFrame(rows)
 
 
@@ -2072,10 +2055,9 @@ def _synthetic_ic_series(
 # CLI entry point
 # ---------------------------------------------------------------------------
 
+
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="HelixFactor vs FactorMiner Benchmark Suite"
-    )
+    parser = argparse.ArgumentParser(description="HelixFactor vs FactorMiner Benchmark Suite")
     parser.add_argument("--mock", action="store_true", help="Use mock data")
     parser.add_argument("--n-factors", type=int, default=40, help="Target library size")
     parser.add_argument("--n-assets", type=int, default=100, help="Mock data assets")
@@ -2083,9 +2065,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--output", type=str, default="results/", help="Output directory")
     parser.add_argument("--methods", nargs="*", default=None, help="Methods to run")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
-    parser.add_argument(
-        "--log-level", type=str, default="WARNING", help="Logging level"
-    )
+    parser.add_argument("--log-level", type=str, default="WARNING", help="Logging level")
     return parser.parse_args()
 
 
@@ -2114,7 +2094,9 @@ def main() -> None:
     )
     T = list(data.values())[0].shape[1]
     train_end = int(T * 0.7)
-    print(f"    Done in {time.perf_counter()-t0:.1f}s  (T={T}, train=0:{train_end}, test={train_end}:{T})")
+    print(
+        f"    Done in {time.perf_counter() - t0:.1f}s  (T={T}, train=0:{train_end}, test={train_end}:{T})"
+    )
 
     # Run comparison
     print(f"\n[2/4] Running method comparison (n_factors={args.n_factors})...")
@@ -2145,9 +2127,13 @@ def main() -> None:
     if result.statistical_tests:
         dm = result.statistical_tests.get("diebold_mariano", {})
         print("\n--- Statistical Tests (Helix vs Ralph) ---")
-        print(f"    DM stat: {dm.get('dm_stat', 0):.3f}  p={dm.get('p_value', 1):.4f}  dir={dm.get('direction','?')}")
+        print(
+            f"    DM stat: {dm.get('dm_stat', 0):.3f}  p={dm.get('p_value', 1):.4f}  dir={dm.get('direction', '?')}"
+        )
         ci = result.statistical_tests.get("bootstrap_ci_95", {})
-        print(f"    Bootstrap 95% CI on IC diff: [{ci.get('lower', 0):.4f}, {ci.get('upper', 0):.4f}]")
+        print(
+            f"    Bootstrap 95% CI on IC diff: [{ci.get('lower', 0):.4f}, {ci.get('upper', 0):.4f}]"
+        )
         print(f"    Helix outperforms: {result.statistical_tests.get('helix_outperforms', False)}")
 
     # Save outputs

@@ -106,7 +106,9 @@ class FactorFamilyDiscovery:
             family = family_map.setdefault(family_name, FactorFamily(name=family_name))
             family.count += 1
             family.admitted_count += int(bool(entry.get("admitted", True)))
-            ic_totals[family_name] = ic_totals.get(family_name, 0.0) + float(entry.get("ic_mean", 0.0))
+            ic_totals[family_name] = ic_totals.get(family_name, 0.0) + float(
+                entry.get("ic_mean", 0.0)
+            )
             for op in extract_operators(formula):
                 family.operators[op] = family.operators.get(op, 0) + 1
             for feature in extract_features(formula):

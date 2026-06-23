@@ -20,6 +20,7 @@ from factorminer.evaluation.metrics import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def rng():
     return np.random.default_rng(123)
@@ -56,6 +57,7 @@ def known_quintile_signal(rng):
 # ---------------------------------------------------------------------------
 # IC computation
 # ---------------------------------------------------------------------------
+
 
 class TestIC:
     """Test Information Coefficient computation."""
@@ -105,6 +107,7 @@ class TestIC:
 # ICIR computation
 # ---------------------------------------------------------------------------
 
+
 class TestICIR:
     """Test ICIR = mean(IC) / std(IC)."""
 
@@ -141,6 +144,7 @@ class TestICIR:
 # IC-derived statistics
 # ---------------------------------------------------------------------------
 
+
 class TestICStats:
     """Test IC mean and win rate."""
 
@@ -168,6 +172,7 @@ class TestICStats:
 # ---------------------------------------------------------------------------
 # Pairwise correlation
 # ---------------------------------------------------------------------------
+
 
 class TestPairwiseCorrelation:
     """Test pairwise cross-sectional correlation."""
@@ -206,6 +211,7 @@ class TestPairwiseCorrelation:
 # Quintile returns
 # ---------------------------------------------------------------------------
 
+
 class TestQuintileReturns:
     """Test quintile return computation."""
 
@@ -221,9 +227,7 @@ class TestQuintileReturns:
         signals, returns = known_quintile_signal
         result = compute_quintile_returns(signals, returns)
         # With positively correlated signal, Q5 > Q1
-        assert result["long_short"] > 0, (
-            f"Expected positive long_short, got {result['long_short']}"
-        )
+        assert result["long_short"] > 0, f"Expected positive long_short, got {result['long_short']}"
         # Monotonicity should be positive
         assert result["monotonicity"] > 0.5, (
             f"Expected high monotonicity, got {result['monotonicity']}"
@@ -241,6 +245,7 @@ class TestQuintileReturns:
 # ---------------------------------------------------------------------------
 # Turnover
 # ---------------------------------------------------------------------------
+
 
 class TestTurnover:
     """Test portfolio turnover computation."""
@@ -261,6 +266,7 @@ class TestTurnover:
 # ---------------------------------------------------------------------------
 # Comprehensive factor stats
 # ---------------------------------------------------------------------------
+
 
 class TestFactorStats:
     """Test the compute_factor_stats wrapper."""

@@ -19,6 +19,7 @@ except ImportError:
 # Helpers
 # ===========================================================================
 
+
 def _rolling_np(x: np.ndarray, window: int):
     """Yield views of shape (M, T-w+1, w) using stride tricks."""
     M, T = x.shape
@@ -56,6 +57,7 @@ def _pad_front_torch(result: torch.Tensor, window: int, total_T: int) -> torch.T
 # ===========================================================================
 # NumPy implementations
 # ===========================================================================
+
 
 def mean_np(x: np.ndarray, window: int = 10) -> np.ndarray:
     window = int(window)
@@ -96,8 +98,8 @@ def skew_np(x: np.ndarray, window: int = 20) -> np.ndarray:
     m = np.nanmean(w, axis=2, keepdims=True)
     d = w - m
     np.sum(~np.isnan(w), axis=2, keepdims=True).astype(np.float64)
-    m2 = np.nanmean(d ** 2, axis=2, keepdims=True)
-    m3 = np.nanmean(d ** 3, axis=2, keepdims=True)
+    m2 = np.nanmean(d**2, axis=2, keepdims=True)
+    m3 = np.nanmean(d**3, axis=2, keepdims=True)
     with np.errstate(invalid="ignore", divide="ignore"):
         sk = m3 / np.power(m2, 1.5)
     result = sk.squeeze(2)
@@ -112,8 +114,8 @@ def kurt_np(x: np.ndarray, window: int = 20) -> np.ndarray:
         return np.full_like(x, np.nan)
     m = np.nanmean(w, axis=2, keepdims=True)
     d = w - m
-    m2 = np.nanmean(d ** 2, axis=2, keepdims=True)
-    m4 = np.nanmean(d ** 4, axis=2, keepdims=True)
+    m2 = np.nanmean(d**2, axis=2, keepdims=True)
+    m4 = np.nanmean(d**4, axis=2, keepdims=True)
     with np.errstate(invalid="ignore", divide="ignore"):
         kt = m4 / np.power(m2, 2.0) - 3.0
     result = kt.squeeze(2)
@@ -245,6 +247,7 @@ def count_not_nan_np(x: np.ndarray, window: int = 10) -> np.ndarray:
 # PyTorch (GPU) implementations
 # ===========================================================================
 
+
 def mean_torch(x: torch.Tensor, window: int = 10) -> torch.Tensor:
     window = int(window)
     M, T = x.shape
@@ -262,7 +265,7 @@ def std_torch(x: torch.Tensor, window: int = 10) -> torch.Tensor:
     not_nan = ~torch.isnan(w)
     d = d.nan_to_num(0.0)
     n = not_nan.sum(dim=2, keepdim=True).float()
-    var = (d ** 2).sum(dim=2, keepdim=True) / (n - 1).clamp(min=1)
+    var = (d**2).sum(dim=2, keepdim=True) / (n - 1).clamp(min=1)
     result = var.sqrt().squeeze(2)
     result[n.squeeze(2) < 2] = float("nan")
     return _pad_front_torch(result, window, T)
@@ -277,7 +280,7 @@ def var_torch(x: torch.Tensor, window: int = 10) -> torch.Tensor:
     not_nan = ~torch.isnan(w)
     d = d.nan_to_num(0.0)
     n = not_nan.sum(dim=2, keepdim=True).float()
-    result = ((d ** 2).sum(dim=2, keepdim=True) / (n - 1).clamp(min=1)).squeeze(2)
+    result = ((d**2).sum(dim=2, keepdim=True) / (n - 1).clamp(min=1)).squeeze(2)
     result[n.squeeze(2) < 2] = float("nan")
     return _pad_front_torch(result, window, T)
 
@@ -290,8 +293,8 @@ def skew_torch(x: torch.Tensor, window: int = 20) -> torch.Tensor:
     d = (w - m).nan_to_num(0.0)
     not_nan = ~torch.isnan(w)
     n = not_nan.sum(dim=2, keepdim=True).float()
-    m2 = (d ** 2).sum(dim=2, keepdim=True) / n.clamp(min=1)
-    m3 = (d ** 3).sum(dim=2, keepdim=True) / n.clamp(min=1)
+    m2 = (d**2).sum(dim=2, keepdim=True) / n.clamp(min=1)
+    m3 = (d**3).sum(dim=2, keepdim=True) / n.clamp(min=1)
     result = (m3 / m2.pow(1.5)).squeeze(2)
     result[n.squeeze(2) < 3] = float("nan")
     return _pad_front_torch(result, window, T)
@@ -305,8 +308,8 @@ def kurt_torch(x: torch.Tensor, window: int = 20) -> torch.Tensor:
     d = (w - m).nan_to_num(0.0)
     not_nan = ~torch.isnan(w)
     n = not_nan.sum(dim=2, keepdim=True).float()
-    m2 = (d ** 2).sum(dim=2, keepdim=True) / n.clamp(min=1)
-    m4 = (d ** 4).sum(dim=2, keepdim=True) / n.clamp(min=1)
+    m2 = (d**2).sum(dim=2, keepdim=True) / n.clamp(min=1)
+    m4 = (d**4).sum(dim=2, keepdim=True) / n.clamp(min=1)
     result = (m4 / m2.pow(2.0) - 3.0).squeeze(2)
     result[n.squeeze(2) < 4] = float("nan")
     return _pad_front_torch(result, window, T)

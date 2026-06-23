@@ -271,6 +271,7 @@ else:
 # Window construction helper (NumPy, no copy when F is contiguous)
 # ===========================================================================
 
+
 def _build_windows_np(x: np.ndarray, window: int) -> np.ndarray:
     """Create sliding windows from a (M, T, F) array.
 
@@ -292,6 +293,7 @@ def _build_windows_np(x: np.ndarray, window: int) -> np.ndarray:
 # ===========================================================================
 # IC loss helpers (differentiable Pearson proxy)
 # ===========================================================================
+
 
 def _pearson_ic_loss(
     pred: torch.Tensor,
@@ -334,6 +336,7 @@ def _l2_regularisation(model: NeuralLeaf, lam: float = 1e-4) -> torch.Tensor:
 # ===========================================================================
 # Training procedure
 # ===========================================================================
+
 
 def train_neural_leaf(
     name: str,
@@ -427,9 +430,7 @@ def train_neural_leaf(
 
     N = X_flat.shape[0]
     if N < 100:
-        logger.warning(
-            "train_neural_leaf(%s): only %d valid samples after NaN removal.", name, N
-        )
+        logger.warning("train_neural_leaf(%s): only %d valid samples after NaN removal.", name, N)
         return None
 
     # ------------------------------------------------------------------
@@ -578,6 +579,7 @@ def train_neural_leaf(
 # Symbolic Distillation
 # ===========================================================================
 
+
 @dataclass
 class DistillationResult:
     """Result of distilling a neural leaf to a symbolic approximation.
@@ -691,7 +693,7 @@ def _build_symbolic_candidates(data: dict[str, np.ndarray]) -> dict[str, np.ndar
             if w < T:
                 prev = close[:, :-w]
                 ok = np.abs(prev) > 1e-10
-                out[: , w:][ok] = close[:, w:][ok] / prev[ok] - 1.0
+                out[:, w:][ok] = close[:, w:][ok] / prev[ok] - 1.0
             _safe_add(f"Return($close, {w})", out)
         # TsRank
         for w in (5, 10, 20):
@@ -826,6 +828,7 @@ def distill_to_symbolic(
 # Expression Tree Integration
 # ===========================================================================
 
+
 class NeuralLeafNode:
     """A node that wraps a NeuralLeaf for use inside expression trees.
 
@@ -925,6 +928,7 @@ class NeuralLeafNode:
 # SymbolicShell — presents a neural leaf as a typed operator
 # ===========================================================================
 
+
 class SymbolicShell:
     """Wraps a NeuralLeaf as a callable operator compatible with the DSL.
 
@@ -1002,6 +1006,7 @@ class SymbolicShell:
 # ===========================================================================
 # NeuralLeafRegistry
 # ===========================================================================
+
 
 class NeuralLeafRegistry:
     """Registry of named, trained NeuralLeaf models.
@@ -1152,6 +1157,7 @@ class NeuralLeafRegistry:
 # NeuralOperatorIntegration — high-level orchestration
 # ===========================================================================
 
+
 @dataclass
 class NeuralLeafConfig:
     """Configuration for a single named neural leaf.
@@ -1286,9 +1292,7 @@ class NeuralOperatorIntegration:
             leaf = self._registry.get(name)
             if leaf is None:
                 continue
-            distilled = distill_to_symbolic(
-                leaf, data, feature_order=self._feature_order
-            )
+            distilled = distill_to_symbolic(leaf, data, feature_order=self._feature_order)
             self._distillation_results[name] = distilled
             results[name] = distilled.formula
             logger.info(
@@ -1423,7 +1427,9 @@ def register_neural_leaves_in_operator_registry() -> None:
         from factorminer.core.types import OperatorSpec, OperatorType, SignatureType
         from factorminer.operators.registry import OPERATOR_REGISTRY  # type: ignore[attr-defined]
     except ImportError:
-        logger.debug("register_neural_leaves_in_operator_registry: operator registry not available.")
+        logger.debug(
+            "register_neural_leaves_in_operator_registry: operator registry not available."
+        )
         return
 
     registry = get_global_neural_registry()
@@ -1467,6 +1473,7 @@ def register_neural_leaves_in_operator_registry() -> None:
 # ===========================================================================
 # Convenience: build standard leaves from mock data
 # ===========================================================================
+
 
 def build_default_neural_leaves(
     num_assets: int = 20,

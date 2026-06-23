@@ -46,9 +46,7 @@ def test_compute_targets_supports_multiple_horizons():
 
 
 def test_evaluate_factors_records_all_target_stats(small_data):
-    timestamps = np.array(
-        [np.datetime64("2024-01-01") + np.timedelta64(i, "D") for i in range(50)]
-    )
+    timestamps = np.array([np.datetime64("2024-01-01") + np.timedelta64(i, "D") for i in range(50)])
     returns = small_data["$returns"]
     data_tensor = np.stack(
         [

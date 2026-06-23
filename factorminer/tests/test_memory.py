@@ -24,6 +24,7 @@ from factorminer.memory.memory_store import (
 # Initialization
 # ---------------------------------------------------------------------------
 
+
 class TestInitialization:
     """Test memory manager initialization with default patterns."""
 
@@ -60,6 +61,7 @@ class TestInitialization:
 # ---------------------------------------------------------------------------
 # Formation
 # ---------------------------------------------------------------------------
+
 
 class TestFormation:
     """Test memory formation from trajectory."""
@@ -103,6 +105,7 @@ class TestFormation:
 # Evolution
 # ---------------------------------------------------------------------------
 
+
 class TestEvolution:
     """Test memory evolution (merge + consolidate)."""
 
@@ -125,7 +128,8 @@ class TestEvolution:
     def test_evolve_caps_memory_size(self, mock_memory, sample_trajectory):
         formed = form_memory(mock_memory.memory, sample_trajectory, batch_number=1)
         evolved = evolve_memory(
-            mock_memory.memory, formed,
+            mock_memory.memory,
+            formed,
             max_success_patterns=5,
             max_failure_patterns=5,
             max_insights=5,
@@ -138,6 +142,7 @@ class TestEvolution:
 # ---------------------------------------------------------------------------
 # Retrieval
 # ---------------------------------------------------------------------------
+
 
 class TestRetrieval:
     """Test context-dependent memory retrieval."""
@@ -195,20 +200,24 @@ class TestRetrieval:
         ]
 
         kg = FactorKnowledgeGraph()
-        kg.add_factor(FactorNode(
-            factor_id="neighbor_factor",
-            formula="CsRank(Corr($close, $volume, 20))",
-            operators=["CsRank", "Corr"],
-            features=["$close", "$volume"],
-            admitted=True,
-        ))
-        kg.add_factor(FactorNode(
-            factor_id="distant_factor",
-            formula="Neg(Std($returns, 10))",
-            operators=["Neg", "Std"],
-            features=["$returns"],
-            admitted=True,
-        ))
+        kg.add_factor(
+            FactorNode(
+                factor_id="neighbor_factor",
+                formula="CsRank(Corr($close, $volume, 20))",
+                operators=["CsRank", "Corr"],
+                features=["$close", "$volume"],
+                admitted=True,
+            )
+        )
+        kg.add_factor(
+            FactorNode(
+                factor_id="distant_factor",
+                formula="Neg(Std($returns, 10))",
+                operators=["Neg", "Std"],
+                features=["$returns"],
+                admitted=True,
+            )
+        )
 
         embedder = FormulaEmbedder(use_faiss=False)
 
@@ -237,6 +246,7 @@ class TestRetrieval:
 # Full update cycle
 # ---------------------------------------------------------------------------
 
+
 class TestUpdateCycle:
     """Test the full update (formation + evolution) via the manager."""
 
@@ -262,6 +272,7 @@ class TestUpdateCycle:
 # ---------------------------------------------------------------------------
 # Save / load roundtrip
 # ---------------------------------------------------------------------------
+
 
 class TestPersistence:
     """Test save and load roundtrip."""
@@ -303,6 +314,7 @@ class TestPersistence:
 # ---------------------------------------------------------------------------
 # Memory store serialization
 # ---------------------------------------------------------------------------
+
 
 class TestMemoryStoreSerialization:
     """Test data class to_dict / from_dict methods."""
@@ -363,12 +375,8 @@ class TestMemoryStoreSerialization:
             success_patterns=[
                 SuccessPattern(name="P1", description="d1", template="t1", success_rate="High")
             ],
-            forbidden_directions=[
-                ForbiddenDirection(name="F1", description="d1")
-            ],
-            insights=[
-                StrategicInsight(insight="I1", evidence="E1")
-            ],
+            forbidden_directions=[ForbiddenDirection(name="F1", description="d1")],
+            insights=[StrategicInsight(insight="I1", evidence="E1")],
             version=3,
         )
         d = mem.to_dict()
@@ -382,6 +390,7 @@ class TestMemoryStoreSerialization:
 # ---------------------------------------------------------------------------
 # Stats
 # ---------------------------------------------------------------------------
+
 
 class TestStats:
     """Test memory manager statistics."""

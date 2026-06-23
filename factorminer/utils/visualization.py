@@ -24,24 +24,26 @@ def _apply_style() -> None:
     global _STYLE_APPLIED
     if _STYLE_APPLIED:
         return
-    plt.rcParams.update({
-        "figure.facecolor": "white",
-        "axes.facecolor": "white",
-        "axes.edgecolor": "#333333",
-        "axes.labelcolor": "#333333",
-        "axes.grid": True,
-        "grid.alpha": 0.3,
-        "grid.linestyle": "--",
-        "xtick.color": "#333333",
-        "ytick.color": "#333333",
-        "font.size": 10,
-        "axes.titlesize": 12,
-        "axes.labelsize": 10,
-        "legend.fontsize": 9,
-        "figure.dpi": 150,
-        "savefig.dpi": 200,
-        "savefig.bbox": "tight",
-    })
+    plt.rcParams.update(
+        {
+            "figure.facecolor": "white",
+            "axes.facecolor": "white",
+            "axes.edgecolor": "#333333",
+            "axes.labelcolor": "#333333",
+            "axes.grid": True,
+            "grid.alpha": 0.3,
+            "grid.linestyle": "--",
+            "xtick.color": "#333333",
+            "ytick.color": "#333333",
+            "font.size": 10,
+            "axes.titlesize": 12,
+            "axes.labelsize": 10,
+            "legend.fontsize": 9,
+            "figure.dpi": 150,
+            "savefig.dpi": 200,
+            "savefig.bbox": "tight",
+        }
+    )
     _STYLE_APPLIED = True
 
 
@@ -57,6 +59,7 @@ def _save_or_show(fig: plt.Figure, save_path: str | None) -> None:
 # ---------------------------------------------------------------------------
 # Correlation heatmap (Figure 2)
 # ---------------------------------------------------------------------------
+
 
 def plot_correlation_heatmap(
     correlation_matrix: np.ndarray,
@@ -126,6 +129,7 @@ def plot_correlation_heatmap(
 # IC time series (Figure 5)
 # ---------------------------------------------------------------------------
 
+
 def plot_ic_timeseries(
     ic_series: np.ndarray,
     dates: list[str],
@@ -170,18 +174,21 @@ def plot_ic_timeseries(
     # Cumulative IC
     cumulative_ic = np.nancumsum(ic_clean)
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 7), height_ratios=[2, 1],
-                                    sharex=True, gridspec_kw={"hspace": 0.08})
+    fig, (ax1, ax2) = plt.subplots(
+        2, 1, figsize=(12, 7), height_ratios=[2, 1], sharex=True, gridspec_kw={"hspace": 0.08}
+    )
 
     # Top: daily IC bars + rolling mean
     colors = np.where(ic_clean >= 0, "#4CAF50", "#F44336")
     ax1.bar(x, ic_clean, color=colors, alpha=0.5, width=1.0, edgecolor="none")
-    ax1.plot(x, rolling_ic, color="#1565C0", linewidth=1.5,
-             label=f"{rolling_window}-day Rolling Mean")
+    ax1.plot(
+        x, rolling_ic, color="#1565C0", linewidth=1.5, label=f"{rolling_window}-day Rolling Mean"
+    )
 
     ic_mean = float(np.nanmean(ic_series))
-    ax1.axhline(y=ic_mean, color="#FF6F00", linestyle="--", linewidth=1.0,
-                label=f"Mean IC = {ic_mean:.4f}")
+    ax1.axhline(
+        y=ic_mean, color="#FF6F00", linestyle="--", linewidth=1.0, label=f"Mean IC = {ic_mean:.4f}"
+    )
     ax1.axhline(y=0, color="black", linewidth=0.5)
 
     ax1.set_ylabel("Rank IC")
@@ -210,6 +217,7 @@ def plot_ic_timeseries(
 # ---------------------------------------------------------------------------
 # Quintile returns (Figure 6)
 # ---------------------------------------------------------------------------
+
 
 def plot_quintile_returns(
     quintile_returns: dict,
@@ -251,9 +259,14 @@ def plot_quintile_returns(
     # Value labels on bars
     for bar, val in zip(bars, q_means):
         y = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, y,
-                f"{val:.4f}", ha="center",
-                va="bottom" if y >= 0 else "top", fontsize=9)
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            y,
+            f"{val:.4f}",
+            ha="center",
+            va="bottom" if y >= 0 else "top",
+            fontsize=9,
+        )
 
     ax.axhline(y=0, color="black", linewidth=0.5)
     ax.set_ylabel("Mean Return")
@@ -288,6 +301,7 @@ def plot_quintile_returns(
 # ---------------------------------------------------------------------------
 # Ablation comparison (Figure 3)
 # ---------------------------------------------------------------------------
+
 
 def plot_ablation_comparison(
     with_memory: dict,
@@ -325,16 +339,24 @@ def plot_ablation_comparison(
     vals_with = [with_memory.get(k, 0) for k in count_keys]
     vals_without = [without_memory.get(k, 0) for k in count_keys]
 
-    bars1 = ax1.bar(x - w / 2, vals_with, w, label="With Memory",
-                    color="#1565C0", edgecolor="white")
-    bars2 = ax1.bar(x + w / 2, vals_without, w, label="Without Memory",
-                    color="#E53935", edgecolor="white")
+    bars1 = ax1.bar(
+        x - w / 2, vals_with, w, label="With Memory", color="#1565C0", edgecolor="white"
+    )
+    bars2 = ax1.bar(
+        x + w / 2, vals_without, w, label="Without Memory", color="#E53935", edgecolor="white"
+    )
 
     for bars in [bars1, bars2]:
         for bar in bars:
             h = bar.get_height()
-            ax1.text(bar.get_x() + bar.get_width() / 2, h,
-                     f"{int(h)}", ha="center", va="bottom", fontsize=9)
+            ax1.text(
+                bar.get_x() + bar.get_width() / 2,
+                h,
+                f"{int(h)}",
+                ha="center",
+                va="bottom",
+                fontsize=9,
+            )
 
     ax1.set_xticks(x)
     ax1.set_xticklabels(count_labels)
@@ -347,16 +369,24 @@ def plot_ablation_comparison(
     vals_with_r = [with_memory.get(k, 0) * 100 for k in rate_keys]
     vals_without_r = [without_memory.get(k, 0) * 100 for k in rate_keys]
 
-    bars3 = ax2.bar(x2 - w / 2, vals_with_r, w, label="With Memory",
-                    color="#1565C0", edgecolor="white")
-    bars4 = ax2.bar(x2 + w / 2, vals_without_r, w, label="Without Memory",
-                    color="#E53935", edgecolor="white")
+    bars3 = ax2.bar(
+        x2 - w / 2, vals_with_r, w, label="With Memory", color="#1565C0", edgecolor="white"
+    )
+    bars4 = ax2.bar(
+        x2 + w / 2, vals_without_r, w, label="Without Memory", color="#E53935", edgecolor="white"
+    )
 
     for bars in [bars3, bars4]:
         for bar in bars:
             h = bar.get_height()
-            ax2.text(bar.get_x() + bar.get_width() / 2, h,
-                     f"{h:.1f}%", ha="center", va="bottom", fontsize=9)
+            ax2.text(
+                bar.get_x() + bar.get_width() / 2,
+                h,
+                f"{h:.1f}%",
+                ha="center",
+                va="bottom",
+                fontsize=9,
+            )
 
     ax2.set_xticks(x2)
     ax2.set_xticklabels(rate_labels)
@@ -371,6 +401,7 @@ def plot_ablation_comparison(
 # ---------------------------------------------------------------------------
 # Efficiency benchmark (Figure 4)
 # ---------------------------------------------------------------------------
+
 
 def plot_efficiency_benchmark(
     benchmarks: dict[str, dict[str, float]],
@@ -392,9 +423,7 @@ def plot_efficiency_benchmark(
     _apply_style()
 
     backends = list(benchmarks.keys())
-    operations = sorted(
-        {op for bm in benchmarks.values() for op in bm.keys()}
-    )
+    operations = sorted({op for bm in benchmarks.values() for op in bm.keys()})
     n_backends = len(backends)
     n_ops = len(operations)
 
@@ -409,14 +438,20 @@ def plot_efficiency_benchmark(
     for i, backend in enumerate(backends):
         vals = [benchmarks[backend].get(op, 0) for op in operations]
         offset = (i - (n_backends - 1) / 2) * w
-        bars = ax.bar(x + offset, vals, w, label=backend,
-                      color=palette[i % len(palette)], edgecolor="white")
+        bars = ax.bar(
+            x + offset, vals, w, label=backend, color=palette[i % len(palette)], edgecolor="white"
+        )
 
         for bar, val in zip(bars, vals):
             if val > 0:
-                ax.text(bar.get_x() + bar.get_width() / 2,
-                        bar.get_height(),
-                        f"{val:.3g}s", ha="center", va="bottom", fontsize=7)
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2,
+                    bar.get_height(),
+                    f"{val:.3g}s",
+                    ha="center",
+                    va="bottom",
+                    fontsize=7,
+                )
 
     ax.set_yscale("log")
     ax.set_ylabel("Time (seconds, log scale)")
@@ -433,6 +468,7 @@ def plot_efficiency_benchmark(
 # ---------------------------------------------------------------------------
 # Cost pressure (Figure 9)
 # ---------------------------------------------------------------------------
+
 
 def plot_cost_pressure(
     results: dict[float, dict],
@@ -461,7 +497,7 @@ def plot_cost_pressure(
     for color, cost in zip(palette, cost_levels):
         data = results[cost]
         cum_ret = np.asarray(data["cumulative_returns"])
-        label = f"TC = {cost*100:.1f}%" if cost > 0 else "No TC"
+        label = f"TC = {cost * 100:.1f}%" if cost > 0 else "No TC"
 
         ax1.plot(cum_ret, color=color, linewidth=1.3, label=label)
         # For log scale, shift to always positive
@@ -487,6 +523,7 @@ def plot_cost_pressure(
 # ---------------------------------------------------------------------------
 # Mining funnel chart
 # ---------------------------------------------------------------------------
+
 
 def plot_mining_funnel(
     batch_stats: dict,
@@ -521,15 +558,28 @@ def plot_mining_funnel(
     y_positions = list(range(len(stages) - 1, -1, -1))
     bar_colors = ["#42A5F5", "#66BB6A", "#FFA726", "#EF5350"]
 
-    for i, (y, val, label, color) in enumerate(
-        zip(y_positions, values, labels, bar_colors)
-    ):
+    for i, (y, val, label, color) in enumerate(zip(y_positions, values, labels, bar_colors)):
         width = val / max_val if max_val > 0 else 0
-        ax.barh(y, width, height=0.6, color=color, edgecolor="white",
-                      linewidth=1.5, left=(1 - width) / 2)
+        ax.barh(
+            y,
+            width,
+            height=0.6,
+            color=color,
+            edgecolor="white",
+            linewidth=1.5,
+            left=(1 - width) / 2,
+        )
         # Label inside the bar
-        ax.text(0.5, y, f"{label}\n{val:,}", ha="center", va="center",
-                fontsize=10, fontweight="bold", color="white" if width > 0.3 else "#333")
+        ax.text(
+            0.5,
+            y,
+            f"{label}\n{val:,}",
+            ha="center",
+            va="center",
+            fontsize=10,
+            fontweight="bold",
+            color="white" if width > 0.3 else "#333",
+        )
 
     # Draw connecting trapezoids
     for i in range(len(stages) - 1):
@@ -547,9 +597,17 @@ def plot_mining_funnel(
         if values[i] > 0:
             drop = (1 - values[i + 1] / values[i]) * 100
             mid_y = (y_top + y_bot) / 2
-            ax.text(1.02, mid_y, f"-{drop:.0f}%", ha="left", va="center",
-                    fontsize=9, color="#E53935", fontweight="bold",
-                    transform=ax.get_yaxis_transform())
+            ax.text(
+                1.02,
+                mid_y,
+                f"-{drop:.0f}%",
+                ha="left",
+                va="center",
+                fontsize=9,
+                color="#E53935",
+                fontweight="bold",
+                transform=ax.get_yaxis_transform(),
+            )
 
     ax.set_xlim(-0.05, 1.15)
     ax.set_ylim(-0.5, len(stages) - 0.5)

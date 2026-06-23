@@ -188,15 +188,17 @@ def _reclassify_patterns(
 
         if should_reclassify and matching_forbidden is not None:
             # Demote: success -> forbidden
-            new_forbidden.append(ForbiddenDirection(
-                name=pat.name,
-                description=f"Reclassified from success: {pat.description}",
-                correlated_factors=matching_forbidden.correlated_factors,
-                typical_correlation=matching_forbidden.typical_correlation,
-                reason=f"Initially promising but consistently produces correlated factors "
-                       f"(rho={matching_forbidden.typical_correlation:.2f})",
-                occurrence_count=matching_forbidden.occurrence_count,
-            ))
+            new_forbidden.append(
+                ForbiddenDirection(
+                    name=pat.name,
+                    description=f"Reclassified from success: {pat.description}",
+                    correlated_factors=matching_forbidden.correlated_factors,
+                    typical_correlation=matching_forbidden.typical_correlation,
+                    reason=f"Initially promising but consistently produces correlated factors "
+                    f"(rho={matching_forbidden.typical_correlation:.2f})",
+                    occurrence_count=matching_forbidden.occurrence_count,
+                )
+            )
         else:
             remaining_success.append(pat)
 
@@ -229,11 +231,13 @@ def _prune_low_utility(
     Initial knowledge base entries (occurrence_count=0) are preserved.
     """
     pruned_success = [
-        p for p in success_patterns
+        p
+        for p in success_patterns
         if p.occurrence_count >= min_occurrences or p.occurrence_count == 0
     ]
     pruned_forbidden = [
-        f for f in forbidden_directions
+        f
+        for f in forbidden_directions
         if f.occurrence_count >= min_occurrences or f.occurrence_count == 0
     ]
     # Insights are lightweight, keep all
@@ -251,9 +255,9 @@ def _cap_memory_size(
     """Enforce maximum memory sizes by keeping the most useful entries."""
     # Sort success patterns by occurrence count (most useful first)
     if len(success_patterns) > max_success:
-        success_patterns = sorted(
-            success_patterns, key=lambda p: p.occurrence_count, reverse=True
-        )[:max_success]
+        success_patterns = sorted(success_patterns, key=lambda p: p.occurrence_count, reverse=True)[
+            :max_success
+        ]
 
     # Sort forbidden directions by occurrence count
     if len(forbidden_directions) > max_forbidden:
@@ -263,9 +267,7 @@ def _cap_memory_size(
 
     # Keep most recent insights
     if len(insights) > max_insights:
-        insights = sorted(
-            insights, key=lambda i: i.batch_source, reverse=True
-        )[:max_insights]
+        insights = sorted(insights, key=lambda i: i.batch_source, reverse=True)[:max_insights]
 
     return success_patterns, forbidden_directions, insights
 
@@ -273,6 +275,7 @@ def _cap_memory_size(
 # ---------------------------------------------------------------------------
 # Public API: Memory Evolution
 # ---------------------------------------------------------------------------
+
 
 def evolve_memory(
     memory: ExperienceMemory,
@@ -313,9 +316,7 @@ def evolve_memory(
     merged_insights = _merge_insights(memory.insights, formed_memory.insights)
 
     # 2. Reclassify patterns that have changed behavior
-    merged_success, merged_forbidden = _reclassify_patterns(
-        merged_success, merged_forbidden
-    )
+    merged_success, merged_forbidden = _reclassify_patterns(merged_success, merged_forbidden)
 
     # 3. Prune low-utility entries
     merged_success, merged_forbidden, merged_insights = _prune_low_utility(
@@ -324,7 +325,9 @@ def evolve_memory(
 
     # 4. Cap memory size
     merged_success, merged_forbidden, merged_insights = _cap_memory_size(
-        merged_success, merged_forbidden, merged_insights,
+        merged_success,
+        merged_forbidden,
+        merged_insights,
         max_success=max_success_patterns,
         max_forbidden=max_failure_patterns,
         max_insights=max_insights,
@@ -345,6 +348,7 @@ def evolve_memory(
 # ---------------------------------------------------------------------------
 # Phase 2: Online confidence decay helpers (added for HelixFactor)
 # ---------------------------------------------------------------------------
+
 
 def apply_confidence_decay(
     memory: ExperienceMemory,

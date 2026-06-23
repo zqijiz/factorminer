@@ -202,7 +202,7 @@ class FactorGenerator:
                 "from the library. Return them in the same numbered format:\n"
                 "<number>. <name>: <corrected_formula>\n\n"
                 "Broken formulas:\n"
-                + "\n".join(f"  {i+1}. {f}" for i, f in enumerate(failed))
+                + "\n".join(f"  {i + 1}. {f}" for i, f in enumerate(failed))
                 + "\n\nFix all syntax errors, unknown operators, and invalid "
                 "feature names. Every formula must be a valid nested function "
                 "call using only operators from the library."

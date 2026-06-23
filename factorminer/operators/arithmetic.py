@@ -28,6 +28,7 @@ def _eps(x: Array) -> float:
 
 # ---- NumPy implementations ------------------------------------------------
 
+
 def add_np(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     return np.add(x, y)
 
@@ -118,6 +119,7 @@ def power_np(x: np.ndarray, e: float = 2.0) -> np.ndarray:
 
 # ---- PyTorch (GPU) implementations ----------------------------------------
 
+
 def add_torch(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     return x + y
 
@@ -170,7 +172,9 @@ def inv_torch(x: torch.Tensor) -> torch.Tensor:
 
 def pow_torch(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     safe = x.abs().pow(y) * x.sign()
-    return torch.where(torch.isnan(x) | torch.isnan(y), torch.tensor(float("nan"), device=x.device), safe)
+    return torch.where(
+        torch.isnan(x) | torch.isnan(y), torch.tensor(float("nan"), device=x.device), safe
+    )
 
 
 def max_torch(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:

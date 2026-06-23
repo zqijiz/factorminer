@@ -11,6 +11,7 @@ from factorminer.core.factor_library import Factor, FactorLibrary
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def rng():
     return np.random.default_rng(42)
@@ -50,6 +51,7 @@ def _make_factor(
 # ---------------------------------------------------------------------------
 # Admission
 # ---------------------------------------------------------------------------
+
 
 class TestAdmission:
     """Test factor admission rules."""
@@ -114,6 +116,7 @@ class TestAdmission:
 # Replacement
 # ---------------------------------------------------------------------------
 
+
 class TestReplacement:
     """Test the replacement mechanism (Eq. 11)."""
 
@@ -175,6 +178,7 @@ class TestReplacement:
 # Correlation matrix
 # ---------------------------------------------------------------------------
 
+
 class TestCorrelationMatrix:
     """Test correlation matrix management."""
 
@@ -206,9 +210,7 @@ class TestCorrelationMatrix:
         # Full recompute
         lib.update_correlation_matrix()
         assert lib.correlation_matrix.shape == (3, 3)
-        np.testing.assert_array_almost_equal(
-            lib.correlation_matrix, lib.correlation_matrix.T
-        )
+        np.testing.assert_array_almost_equal(lib.correlation_matrix, lib.correlation_matrix.T)
 
     def test_compute_correlation_same_signals(self, rng):
         lib = FactorLibrary()
@@ -220,6 +222,7 @@ class TestCorrelationMatrix:
 # ---------------------------------------------------------------------------
 # Queries and diagnostics
 # ---------------------------------------------------------------------------
+
 
 class TestQueries:
     """Test library query methods."""
@@ -272,6 +275,7 @@ class TestQueries:
 # ---------------------------------------------------------------------------
 # Factor serialization
 # ---------------------------------------------------------------------------
+
 
 class TestFactorSerialization:
     """Test Factor to_dict / from_dict."""

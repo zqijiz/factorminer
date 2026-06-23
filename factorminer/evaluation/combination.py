@@ -40,10 +40,7 @@ class FactorCombiner:
         if not factor_signals:
             raise ValueError("factor_signals must not be empty")
 
-        standardized = [
-            self._cross_sectional_standardize(sig)
-            for sig in factor_signals.values()
-        ]
+        standardized = [self._cross_sectional_standardize(sig) for sig in factor_signals.values()]
         stacked = np.stack(standardized, axis=0)  # (K, T, N)
         # Average over factors, ignoring NaNs
         return np.nanmean(stacked, axis=0)
@@ -117,10 +114,7 @@ class FactorCombiner:
         if not factor_signals:
             raise ValueError("factor_signals must not be empty")
 
-        standardized = [
-            self._cross_sectional_standardize(sig)
-            for sig in factor_signals.values()
-        ]
+        standardized = [self._cross_sectional_standardize(sig) for sig in factor_signals.values()]
 
         orthogonalized = self._gram_schmidt(standardized)
         stacked = np.stack(orthogonalized, axis=0)  # (K, T, N)

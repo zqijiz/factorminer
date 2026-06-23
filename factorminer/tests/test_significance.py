@@ -31,6 +31,7 @@ def config():
 # BootstrapICTester: strong signal -> CI excludes zero
 # -----------------------------------------------------------------------
 
+
 def test_bootstrap_strong_signal_excludes_zero(config):
     """A consistently high IC (0.10) should have CI that excludes zero."""
     T = 200
@@ -47,6 +48,7 @@ def test_bootstrap_strong_signal_excludes_zero(config):
 # -----------------------------------------------------------------------
 # BootstrapICTester: weak signal -> CI includes zero
 # -----------------------------------------------------------------------
+
 
 def test_bootstrap_weak_signal_includes_zero(config):
     """A near-zero IC should have CI that includes zero."""
@@ -82,6 +84,7 @@ def test_bootstrap_p_value_distinguishes_signal_from_noise(config):
 # FDRController: BH procedure
 # -----------------------------------------------------------------------
 
+
 def test_fdr_batch_evaluate_separates_signal_from_noise(config):
     """Batch FDR should keep the strong series and reject the weak one."""
     strong_ic = np.full(200, 0.08)
@@ -97,6 +100,7 @@ def test_fdr_batch_evaluate_separates_signal_from_noise(config):
     assert result.significant["strong_factor"]
     assert not result.significant["weak_factor"]
     assert result.n_discoveries == 1
+
 
 def test_fdr_bh_procedure(config):
     """10 factors with p-values [0.001, ..., 0.010] at FDR=0.05."""
@@ -134,6 +138,7 @@ def test_fdr_empty_input(config):
 # -----------------------------------------------------------------------
 # DeflatedSharpeCalculator
 # -----------------------------------------------------------------------
+
 
 def test_deflated_sharpe_with_known_returns(config):
     """Verify DSR computation with known returns and n_trials."""

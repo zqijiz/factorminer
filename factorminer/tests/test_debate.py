@@ -18,6 +18,7 @@ from factorminer.agent.specialists import (
 # SpecialistConfig and SpecialistPromptBuilder
 # -----------------------------------------------------------------------
 
+
 def test_specialist_config_creation():
     cfg = SpecialistConfig(
         name="test_spec",
@@ -51,10 +52,7 @@ def test_specialist_prompt_builder_creates():
 @pytest.fixture
 def helix_memory_signal():
     return {
-        "prompt_text": (
-            "Prefer library-adjacent structures.\n"
-            "Avoid saturated price-only motifs."
-        ),
+        "prompt_text": ("Prefer library-adjacent structures.\nAvoid saturated price-only motifs."),
         "complementary_patterns": [
             "Combine TsRank momentum with liquidity normalization.",
         ],
@@ -135,6 +133,7 @@ def test_specialist_prompt_builder_renders_helix_retrieval_fields(
 # CriticAgent with MockProvider
 # -----------------------------------------------------------------------
 
+
 def test_critic_agent_with_mock():
     """CriticAgent should produce scores when given proposals."""
     provider = MockProvider()
@@ -160,6 +159,7 @@ def test_critic_agent_with_mock():
 # DebateGenerator.generate_batch returns List[CandidateFactor]
 # -----------------------------------------------------------------------
 
+
 def test_debate_generator_returns_candidates():
     provider = MockProvider()
     gen = DebateGenerator(
@@ -179,6 +179,7 @@ def test_debate_generator_returns_candidates():
 # -----------------------------------------------------------------------
 # DebateGenerator with critic produces non-empty results
 # -----------------------------------------------------------------------
+
 
 def test_debate_generator_with_critic():
     provider = MockProvider()

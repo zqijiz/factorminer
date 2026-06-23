@@ -1051,7 +1051,9 @@ class HelixLoop(RalphLoop):
     def _remove_semantic_artifacts(self, factor_id: str) -> None:
         """Remove a factor from derived semantic stores if present."""
         if self._kg is not None:
-            self._kg_service.remove_factor(kg=self._kg, embedder=self._embedder, factor_id=factor_id)
+            self._kg_service.remove_factor(
+                kg=self._kg, embedder=self._embedder, factor_id=factor_id
+            )
 
     # ------------------------------------------------------------------
     # Auto-invention

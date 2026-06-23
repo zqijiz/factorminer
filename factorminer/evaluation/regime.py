@@ -11,11 +11,13 @@ import enum
 from dataclasses import dataclass
 
 import numpy as np
-from scipy.stats import rankdata
+import pandas as pd
+import pandas as pd
 
 # ---------------------------------------------------------------------------
 # Regime enum
 # ---------------------------------------------------------------------------
+
 
 class MarketRegime(enum.Enum):
     """Market regime labels."""
@@ -28,6 +30,7 @@ class MarketRegime(enum.Enum):
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class RegimeConfig:
@@ -67,6 +70,7 @@ class RegimeConfig:
 # Classification result
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class RegimeClassification:
     """Output of :class:`RegimeDetector.classify`.
@@ -91,6 +95,7 @@ class RegimeClassification:
 # ---------------------------------------------------------------------------
 # Regime detector
 # ---------------------------------------------------------------------------
+
 
 class RegimeDetector:
     """Classify time periods into market regimes.
@@ -131,9 +136,7 @@ class RegimeDetector:
         # Volatility threshold from valid (non-NaN) rolling vol values
         valid_vol = rolling_vol[~np.isnan(rolling_vol)]
         if len(valid_vol) > 0:
-            vol_threshold = float(
-                np.percentile(valid_vol, cfg.volatility_percentile * 100)
-            )
+            vol_threshold = float(np.percentile(valid_vol, cfg.volatility_percentile * 100))
         else:
             vol_threshold = np.inf  # fallback: nothing qualifies as low-vol
 
@@ -145,9 +148,7 @@ class RegimeDetector:
         labels[bear_mask] = MarketRegime.BEAR.value
 
         # BULL: rolling_return > bull_threshold AND rolling_vol < vol_threshold
-        bull_mask = (rolling_mean > cfg.bull_return_threshold) & (
-            rolling_vol < vol_threshold
-        )
+        bull_mask = (rolling_mean > cfg.bull_return_threshold) & (rolling_vol < vol_threshold)
         labels[bull_mask] = MarketRegime.BULL.value
 
         # First lookback_window periods default to SIDEWAYS
@@ -201,6 +202,7 @@ class RegimeDetector:
 # Per-regime IC result
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class RegimeICResult:
     """Evaluation result for a single factor across market regimes.
@@ -235,6 +237,7 @@ class RegimeICResult:
 # ---------------------------------------------------------------------------
 # Regime-aware evaluator
 # ---------------------------------------------------------------------------
+
 
 class RegimeAwareEvaluator:
     """Evaluate factor IC within each market regime.
@@ -317,9 +320,9 @@ class RegimeAwareEvaluator:
         # Weighted average IC
         total_weight = sum(regime_n_periods[r] for r in MarketRegime)
         if total_weight > 0:
-            overall_score = sum(
-                regime_ic[r] * regime_n_periods[r] for r in MarketRegime
-            ) / total_weight
+            overall_score = (
+                sum(regime_ic[r] * regime_n_periods[r] for r in MarketRegime) / total_weight
+            )
         else:
             overall_score = 0.0
 
@@ -369,11 +372,11 @@ class RegimeAwareEvaluator:
             n = valid.sum()
             if n < 5:
                 continue
-            rs = rankdata(s[valid])
-            rr = rankdata(r[valid])
+            rs = pd.Series(s[valid]).rank(method="average", na_option="keep").to_numpy()
+            rr = pd.Series(r[valid]).rank(method="average", na_option="keep").to_numpy()
             rs_m = rs - rs.mean()
             rr_m = rr - rr.mean()
-            denom = np.sqrt((rs_m ** 2).sum() * (rr_m ** 2).sum())
+            denom = np.sqrt((rs_m**2).sum() * (rr_m**2).sum())
             if denom < 1e-12:
                 ic_series[t] = 0.0
             else:
@@ -396,6 +399,7 @@ class RegimeAwareEvaluator:
 # Phase 2: Streaming regime detection (added for HelixFactor)
 # ---------------------------------------------------------------------------
 
+
 class TrendRegime(enum.Enum):
     BULL = "bull"
     BEAR = "bear"
@@ -417,6 +421,7 @@ class MeanRevRegime(enum.Enum):
 @dataclass
 class RegimeState:
     """Composite regime state: trend + vol + mean-reversion classification."""
+
     trend: TrendRegime = TrendRegime.NEUTRAL
     vol: VolRegime = VolRegime.NORMAL_VOL
     mean_rev: MeanRevRegime = MeanRevRegime.RANDOM_WALK
@@ -446,14 +451,15 @@ class RegimeState:
 @dataclass
 class StreamingRegimeConfig:
     """Configuration for StreamingRegimeDetector."""
-    fast_alpha: float = 0.1          # EW decay for fast stats
-    slow_alpha: float = 0.02         # EW decay for slow (baseline) stats
+
+    fast_alpha: float = 0.1  # EW decay for fast stats
+    slow_alpha: float = 0.02  # EW decay for slow (baseline) stats
     trend_sigma_threshold: float = 1.0  # sigmas above/below zero for BULL/BEAR
     vol_high_quantile: float = 0.75  # quantile threshold for HIGH_VOL
-    vol_low_quantile: float = 0.25   # quantile threshold for LOW_VOL
+    vol_low_quantile: float = 0.25  # quantile threshold for LOW_VOL
     hurst_lags: tuple = (2, 4, 8, 16)  # lags for variance-ratio Hurst estimate
-    hmm_smoothing: float = 0.3       # sticky-state weight (0 = no smoothing)
-    history_maxlen: int = 500        # max regime history records
+    hmm_smoothing: float = 0.3  # sticky-state weight (0 = no smoothing)
+    history_maxlen: int = 500  # max regime history records
 
 
 class StreamingRegimeDetector:
@@ -469,18 +475,20 @@ class StreamingRegimeDetector:
         self.config = config or StreamingRegimeConfig()
         # Exponentially-weighted moments
         self._ew_mean: float = 0.0
-        self._ew_var: float = 0.0          # fast (for current vol)
-        self._ew_var_slow: float = 0.0     # slow (baseline)
+        self._ew_var: float = 0.0  # fast (for current vol)
+        self._ew_var_slow: float = 0.0  # slow (baseline)
         self._n: int = 0
         # Rolling buffers for variance-ratio Hurst
         self._return_buffer: list = []
-        self._vol_buffer: list = []        # rolling realized vol samples
+        self._vol_buffer: list = []  # rolling realized vol samples
         # Regime history
         from collections import deque
+
         self._history: deque = deque(maxlen=self.config.history_maxlen)
         self._transition_counts: dict = {}
         self._current: RegimeState = RegimeState()
         import threading
+
         self._lock = threading.RLock()
 
     # ------------------------------------------------------------------
@@ -489,7 +497,7 @@ class StreamingRegimeDetector:
 
     def update(
         self,
-        returns: np.ndarray,        # (M,) cross-sectional returns at this bar
+        returns: np.ndarray,  # (M,) cross-sectional returns at this bar
         volumes: np.ndarray | None = None,  # (M,) optional — unused currently
     ) -> RegimeState:
         """Process one bar and return updated RegimeState."""
@@ -533,12 +541,12 @@ class StreamingRegimeDetector:
         fa, sa = self.config.fast_alpha, self.config.slow_alpha
         if self._n == 0:
             self._ew_mean = r
-            self._ew_var = vol ** 2
-            self._ew_var_slow = vol ** 2
+            self._ew_var = vol**2
+            self._ew_var_slow = vol**2
         else:
             self._ew_mean = fa * r + (1 - fa) * self._ew_mean
             self._ew_var = fa * (r - self._ew_mean) ** 2 + (1 - fa) * self._ew_var
-            self._ew_var_slow = sa * vol ** 2 + (1 - sa) * self._ew_var_slow
+            self._ew_var_slow = sa * vol**2 + (1 - sa) * self._ew_var_slow
         self._n += 1
         self._return_buffer.append(r)
         self._vol_buffer.append(vol)
@@ -556,7 +564,7 @@ class StreamingRegimeDetector:
     def _classify_trend(self) -> TrendRegime:
         sigma = float(np.sqrt(max(self._ew_var, 1e-16)))
         n = max(self._n, 1)
-        se = sigma / (n ** 0.5)
+        se = sigma / (n**0.5)
         thresh = self.config.trend_sigma_threshold * se
         if self._ew_mean > thresh:
             return TrendRegime.BULL
@@ -610,8 +618,8 @@ class StreamingRegimeDetector:
         # We achieve this by probabilistic rejection — deterministic version:
         # keep current if random draw < smoothing weight (approximate)
         import random
-        if (new_state.trend != self._current.trend or
-                new_state.vol != self._current.vol):
+
+        if new_state.trend != self._current.trend or new_state.vol != self._current.vol:
             if random.random() < w:
                 new_state.trend = self._current.trend
                 new_state.vol = self._current.vol

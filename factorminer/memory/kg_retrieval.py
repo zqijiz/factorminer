@@ -122,9 +122,7 @@ def retrieve_memory_enhanced(
 
     if result["complementary_patterns"]:
         extra_sections.append("=== COMPLEMENTARY PATTERNS (explore) ===")
-        extra_sections.append(
-            "Factors structurally complementary to recent admissions:"
-        )
+        extra_sections.append("Factors structurally complementary to recent admissions:")
         for fid in result["complementary_patterns"][:8]:
             extra_sections.append(f"  - {fid}")
         extra_sections.append("")
@@ -132,8 +130,7 @@ def retrieve_memory_enhanced(
     if result["conflict_warnings"]:
         extra_sections.append("=== SATURATION WARNINGS ===")
         extra_sections.append(
-            "The following factor clusters are highly correlated -- "
-            "avoid generating variants:"
+            "The following factor clusters are highly correlated -- avoid generating variants:"
         )
         for cluster in result["conflict_warnings"][:5]:
             extra_sections.append(f"  Cluster: {', '.join(cluster[:6])}")
@@ -141,9 +138,7 @@ def retrieve_memory_enhanced(
 
     if result["semantic_gaps"]:
         extra_sections.append("=== SEMANTIC GAPS (underexplored) ===")
-        extra_sections.append(
-            "Operators present in success patterns but underused in the library:"
-        )
+        extra_sections.append("Operators present in success patterns but underused in the library:")
         for op in result["semantic_gaps"][:10]:
             extra_sections.append(f"  - {op}")
         extra_sections.append("")
@@ -291,8 +286,7 @@ def _collect_semantic_context(
                 )
             if similarity >= 0.90:
                 semantic_duplicates.append(
-                    f"{anchor_kind} {anchor_id} is very close to {match_id} "
-                    f"(sim={similarity:.2f})"
+                    f"{anchor_kind} {anchor_id} is very close to {match_id} (sim={similarity:.2f})"
                 )
             if len(semantic_neighbors) >= max_neighbors:
                 return semantic_neighbors, semantic_duplicates

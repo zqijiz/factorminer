@@ -135,7 +135,10 @@ class FactorSelector:
             current_icir = best_icir
             logger.info(
                 "Step %d: added factor %d, ICIR=%.4f (+%.4f)",
-                len(selected), best_fid, current_icir, best_delta,
+                len(selected),
+                best_fid,
+                current_icir,
+                best_delta,
             )
 
         return result
@@ -185,9 +188,7 @@ class FactorSelector:
         model.fit(X, y)
 
         importance = model.feature_importances_  # gain-based by default
-        results: list[tuple[int, float]] = [
-            (ids[i], float(importance[i])) for i in range(len(ids))
-        ]
+        results: list[tuple[int, float]] = [(ids[i], float(importance[i])) for i in range(len(ids))]
         results.sort(key=lambda x: x[1], reverse=True)
         return results
 
@@ -220,9 +221,7 @@ class FactorSelector:
         len(ids)
 
         # Build (T*N, K) matrix
-        X = np.column_stack([
-            factor_signals[fid].ravel() for fid in ids
-        ])  # (T*N, K)
+        X = np.column_stack([factor_signals[fid].ravel() for fid in ids])  # (T*N, K)
         y = returns.ravel()  # (T*N,)
 
         # Drop NaN rows

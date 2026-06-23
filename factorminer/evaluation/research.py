@@ -158,9 +158,7 @@ def build_score_vector(
     average_turnover = float(
         np.mean(list(per_horizon_turnover.values())) if per_horizon_turnover else 0.0
     )
-    lower_confidence_bound = float(
-        min(per_horizon_lcb.values()) if per_horizon_lcb else 0.0
-    )
+    lower_confidence_bound = float(min(per_horizon_lcb.values()) if per_horizon_lcb else 0.0)
     redundancy_penalty = admission_cfg.redundancy_penalty * geometry.max_abs_correlation
     turnover_penalty = admission_cfg.turnover_penalty * average_turnover
     geometry_bonus = 0.0
@@ -200,13 +198,11 @@ def passes_research_admission(
     admission_cfg = research_cfg.admission
     if score_vector.primary_score < admission_cfg.min_score:
         return False, (
-            f"Research score {score_vector.primary_score:.4f} "
-            f"< {admission_cfg.min_score:.4f}"
+            f"Research score {score_vector.primary_score:.4f} < {admission_cfg.min_score:.4f}"
         )
     if score_vector.lower_confidence_bound < admission_cfg.min_lcb:
         return False, (
-            f"Research LCB {score_vector.lower_confidence_bound:.4f} "
-            f"< {admission_cfg.min_lcb:.4f}"
+            f"Research LCB {score_vector.lower_confidence_bound:.4f} < {admission_cfg.min_lcb:.4f}"
         )
     if score_vector.geometry.max_abs_correlation < correlation_threshold:
         return True, "Research score passes direct admission"
@@ -253,14 +249,14 @@ def run_research_model_suite(
         fold_reports = []
         selected_sets = []
         for split in splits:
-            train_returns = returns[split.train_start:split.train_end]
-            test_returns = returns[split.test_start:split.test_end]
+            train_returns = returns[split.train_start : split.train_end]
+            test_returns = returns[split.test_start : split.test_end]
             train_signals = {
-                fid: signal[split.train_start:split.train_end]
+                fid: signal[split.train_start : split.train_end]
                 for fid, signal in factor_signals.items()
             }
             test_signals = {
-                fid: signal[split.test_start:split.test_end]
+                fid: signal[split.test_start : split.test_end]
                 for fid, signal in factor_signals.items()
             }
             try:
@@ -409,7 +405,9 @@ def _normalized_weights(
     if not target_names:
         return {}
     if explicit_weights:
-        weights = np.array([max(float(explicit_weights.get(name, 0.0)), 0.0) for name in target_names])
+        weights = np.array(
+            [max(float(explicit_weights.get(name, 0.0)), 0.0) for name in target_names]
+        )
         if weights.sum() > 1e-12:
             normalized = weights / weights.sum()
             return {name: float(normalized[idx]) for idx, name in enumerate(target_names)}
@@ -444,7 +442,9 @@ def _cross_horizon_consistency(per_horizon_ic_mean: dict[str, float]) -> float:
     return float(np.mean(signs == majority))
 
 
-def _flatten_panel(panel: np.ndarray, valid_mask: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
+def _flatten_panel(
+    panel: np.ndarray, valid_mask: np.ndarray | None = None
+) -> tuple[np.ndarray, np.ndarray]:
     matrix = np.asarray(panel, dtype=np.float64)
     if valid_mask is None:
         valid_mask = np.isfinite(matrix)
@@ -457,7 +457,9 @@ def _flatten_panel(panel: np.ndarray, valid_mask: np.ndarray | None = None) -> t
     return filled.reshape(-1), valid_mask
 
 
-def _unflatten_panel(flat: np.ndarray, valid_mask: np.ndarray, shape: tuple[int, int]) -> np.ndarray:
+def _unflatten_panel(
+    flat: np.ndarray, valid_mask: np.ndarray, shape: tuple[int, int]
+) -> np.ndarray:
     matrix = np.full(shape, np.nan, dtype=np.float64)
     matrix[valid_mask] = flat.reshape(shape)[valid_mask]
     return matrix

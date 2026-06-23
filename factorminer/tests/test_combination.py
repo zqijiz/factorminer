@@ -12,6 +12,7 @@ from factorminer.evaluation.selection import FactorSelector
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def combiner():
     return FactorCombiner()
@@ -44,6 +45,7 @@ def identical_signals(rng):
 # ---------------------------------------------------------------------------
 # Equal weight
 # ---------------------------------------------------------------------------
+
 
 class TestEqualWeight:
     """Test equal-weight combination."""
@@ -92,6 +94,7 @@ class TestEqualWeight:
 # IC-weighted
 # ---------------------------------------------------------------------------
 
+
 class TestICWeighted:
     """Test IC-weighted combination."""
 
@@ -134,6 +137,7 @@ class TestICWeighted:
 # Orthogonal
 # ---------------------------------------------------------------------------
 
+
 class TestOrthogonal:
     """Test orthogonal (Gram-Schmidt) combination."""
 
@@ -165,6 +169,7 @@ class TestOrthogonal:
 # ---------------------------------------------------------------------------
 # Cross-sectional standardization helper
 # ---------------------------------------------------------------------------
+
 
 class TestCrossSectionalStandardize:
     """Test the internal _cross_sectional_standardize method."""
@@ -200,6 +205,7 @@ class TestCrossSectionalStandardize:
 # ---------------------------------------------------------------------------
 # Gram-Schmidt helper
 # ---------------------------------------------------------------------------
+
 
 class TestGramSchmidt:
     """Test the Gram-Schmidt orthogonalization helper."""
@@ -244,6 +250,7 @@ class TestGramSchmidt:
 # Fixtures for selection tests
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def selector():
     return FactorSelector()
@@ -285,6 +292,7 @@ def uniform_factors(rng):
 # ---------------------------------------------------------------------------
 # _prepare_panel helper tests
 # ---------------------------------------------------------------------------
+
 
 class TestPreparePanel:
     """Test the _prepare_panel static helper."""
@@ -336,6 +344,7 @@ class TestPreparePanel:
 # _composite_icir helper tests
 # ---------------------------------------------------------------------------
 
+
 class TestCompositeICIR:
     """Test the _composite_icir static helper."""
 
@@ -366,6 +375,7 @@ class TestCompositeICIR:
 # ---------------------------------------------------------------------------
 # Lasso selection tests
 # ---------------------------------------------------------------------------
+
 
 class TestLassoSelection:
     """Test L1-regularized Lasso factor selection."""
@@ -424,6 +434,7 @@ class TestLassoSelection:
 # Forward stepwise selection tests
 # ---------------------------------------------------------------------------
 
+
 class TestForwardStepwise:
     """Test greedy forward stepwise factor selection."""
 
@@ -478,6 +489,7 @@ class TestForwardStepwise:
 # ---------------------------------------------------------------------------
 # XGBoost selection tests
 # ---------------------------------------------------------------------------
+
 
 class TestXGBoostSelection:
     """Test XGBoost importance-based factor selection."""

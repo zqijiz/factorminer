@@ -143,9 +143,7 @@ class CausalValidator:
         }
 
         # --- Granger ---
-        g_p, g_f, g_pass = self._granger_test(
-            signals, self.returns, control_library
-        )
+        g_p, g_f, g_pass = self._granger_test(signals, self.returns, control_library)
         details["granger"] = {
             "p_value": g_p,
             "f_stat": g_f,
@@ -153,9 +151,7 @@ class CausalValidator:
         }
 
         # --- Intervention ---
-        i_ratio, i_pass = self._intervention_test(
-            signals, self.returns, self.data_tensor
-        )
+        i_ratio, i_pass = self._intervention_test(signals, self.returns, self.data_tensor)
         details["intervention"] = {
             "ic_ratio": i_ratio,
             "passes": i_pass,
@@ -224,8 +220,9 @@ class CausalValidator:
         min_length = 2 * cfg.granger_max_lag + 1
         if T < min_length:
             logger.warning(
-                "Time series too short for Granger test "
-                "(T=%d < %d). Passing by default.", T, min_length,
+                "Time series too short for Granger test (T=%d < %d). Passing by default.",
+                T,
+                min_length,
             )
             return 1.0, 0.0, True
 
@@ -235,9 +232,7 @@ class CausalValidator:
 
         # Handle constant or all-NaN series
         if self._is_degenerate(sig_series) or self._is_degenerate(ret_series):
-            logger.warning(
-                "Degenerate series detected in Granger test. Passing by default."
-            )
+            logger.warning("Degenerate series detected in Granger test. Passing by default.")
             return 1.0, 0.0, True
 
         # --- Attempt statsmodels-based Granger test ---
@@ -356,18 +351,14 @@ class CausalValidator:
                 fitted = model.fit(maxlags=effective_lag, ic=None)
 
             # Test Granger causality: does column 1 (signals) cause column 0 (returns)?
-            test_result = fitted.test_causality(
-                caused=0, causing=1, kind="f"
-            )
+            test_result = fitted.test_causality(caused=0, causing=1, kind="f")
             p_value = float(test_result.pvalue)
             f_stat = float(test_result.test_statistic)
 
             return p_value, f_stat
 
         except Exception as exc:
-            logger.warning(
-                "Multivariate Granger (VAR) failed: %s. Skipping.", exc
-            )
+            logger.warning("Multivariate Granger (VAR) failed: %s. Skipping.", exc)
             return None, None
 
     # ------------------------------------------------------------------
@@ -404,9 +395,7 @@ class CausalValidator:
         ratios: list[float] = []
         pass_count = 0
 
-        scenarios = self._build_intervention_scenarios(
-            signals, returns, data_tensor
-        )
+        scenarios = self._build_intervention_scenarios(signals, returns, data_tensor)
 
         for scenario_name, perturbed_signals, perturbed_returns in scenarios:
             ic_pert = compute_ic(perturbed_signals, perturbed_returns)
@@ -467,9 +456,7 @@ class CausalValidator:
 
         else:
             # --- Fallback: add noise directly to signals ---
-            for i, scenario_name in enumerate(
-                ["noise_shock_1", "noise_shock_2", "noise_shock_3"]
-            ):
+            for i, scenario_name in enumerate(["noise_shock_1", "noise_shock_2", "noise_shock_3"]):
                 sig_pert = signals.copy()
                 noise_scale = np.nanstd(signals) * cfg.intervention_magnitude
                 if noise_scale < 1e-12:
@@ -514,9 +501,7 @@ class CausalValidator:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _aggregate_top_assets(
-        matrix: np.ndarray, top_k: int = 20
-    ) -> np.ndarray:
+    def _aggregate_top_assets(matrix: np.ndarray, top_k: int = 20) -> np.ndarray:
         """Average across the top-k assets (by mean absolute value) to
         produce a T-length series.
         """

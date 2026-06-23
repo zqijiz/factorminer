@@ -18,6 +18,7 @@ except ImportError:
 # NumPy implementations
 # ===========================================================================
 
+
 def _linreg_components_np(x: np.ndarray, window: int):
     """Compute slope, intercept, and fitted values for rolling OLS vs time index."""
     window = int(window)
@@ -49,7 +50,7 @@ def _linreg_components_np(x: np.ndarray, window: int):
 
     # R-squared
     ss_res_all = w - (slope[:, :, np.newaxis] * t_idx + intercept[:, :, np.newaxis])
-    ss_res = np.nansum(ss_res_all ** 2, axis=2)
+    ss_res = np.nansum(ss_res_all**2, axis=2)
     ss_tot = np.nansum((w - x_mean) ** 2, axis=2)
     with np.errstate(invalid="ignore", divide="ignore"):
         r2 = np.where(ss_tot > 1e-10, 1.0 - ss_res / ss_tot, np.nan)
@@ -91,6 +92,7 @@ def ts_linreg_resid_np(x: np.ndarray, window: int = 20) -> np.ndarray:
 # PyTorch implementations
 # ===========================================================================
 
+
 def _linreg_components_torch(x: torch.Tensor, window: int):
     """Vectorized rolling OLS on GPU."""
     window = int(window)
@@ -123,8 +125,9 @@ def _linreg_components_torch(x: torch.Tensor, window: int):
     fitted_all = slope.unsqueeze(2) * t_idx + intercept.unsqueeze(2)
     ss_res = ((w_filled - fitted_all) ** 2 * not_nan).sum(dim=2)
     ss_tot = ((w_filled - x_mean.nan_to_num(0.0)) ** 2 * not_nan).sum(dim=2)
-    r2 = torch.where(ss_tot > 1e-10, 1.0 - ss_res / ss_tot,
-                     torch.tensor(float("nan"), device=x.device))
+    r2 = torch.where(
+        ss_tot > 1e-10, 1.0 - ss_res / ss_tot, torch.tensor(float("nan"), device=x.device)
+    )
 
     slope = _pad_front_torch(slope, window, T)
     intercept = _pad_front_torch(intercept, window, T)

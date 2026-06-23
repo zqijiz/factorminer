@@ -281,7 +281,9 @@ def test_visualize_defaults_factor_specific_plots_to_split_top_factor(tmp_path, 
     )
     monkeypatch.setattr(
         "factorminer.utils.visualization.plot_ic_timeseries",
-        lambda ic_series, dates, rolling_window=21, title="", save_path=None: ic_paths.append(save_path),
+        lambda ic_series, dates, rolling_window=21, title="", save_path=None: ic_paths.append(
+            save_path
+        ),
     )
     monkeypatch.setattr(
         "factorminer.utils.visualization.plot_quintile_returns",

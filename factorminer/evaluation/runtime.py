@@ -335,9 +335,7 @@ def select_top_k(
     """Sort succeeded artifacts by split abs-IC and return the top-k subset."""
     succeeded = [a for a in artifacts if a.succeeded]
     succeeded.sort(
-        key=lambda artifact: abs(
-            artifact.split_stats[split_name].get("ic_abs_mean", 0.0)
-        ),
+        key=lambda artifact: abs(artifact.split_stats[split_name].get("ic_abs_mean", 0.0)),
         reverse=True,
     )
     if top_k is None or top_k >= len(succeeded):
@@ -402,8 +400,7 @@ def _build_named_split(
         timestamps=timestamps[indices],
         returns=returns[:, indices],
         target_returns={
-            target_name: panel[:, indices]
-            for target_name, panel in target_panels.items()
+            target_name: panel[:, indices] for target_name, panel in target_panels.items()
         },
         default_target=default_target,
     )
@@ -453,9 +450,7 @@ def _handle_signal_failure(
         ) from cause
 
     if signal_failure_policy != "synthetic":
-        raise ValueError(
-            "signal_failure_policy must be one of: reject, synthetic, raise"
-        )
+        raise ValueError("signal_failure_policy must be one of: reject, synthetic, raise")
 
     logger.warning(
         "Expression evaluation failed for '%s': %s — falling back to synthetic signals",

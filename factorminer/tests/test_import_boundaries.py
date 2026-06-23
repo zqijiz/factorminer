@@ -22,4 +22,3 @@ def test_evaluation_runtime_import_is_cycle_free_in_fresh_process() -> None:
     )
 
     assert "SignalComputationError" in result.stdout
-

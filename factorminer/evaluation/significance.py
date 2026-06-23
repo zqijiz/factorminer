@@ -17,6 +17,7 @@ from scipy.stats import kurtosis, norm, skew
 # Configuration
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class SignificanceConfig:
     """Configuration for all significance tests."""
@@ -34,6 +35,7 @@ class SignificanceConfig:
 # ---------------------------------------------------------------------------
 # Bootstrap CI
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class BootstrapCIResult:
@@ -65,9 +67,7 @@ class BootstrapICTester:
 
     # ----- public API -----
 
-    def compute_ci(
-        self, factor_name: str, ic_series: np.ndarray
-    ) -> BootstrapCIResult:
+    def compute_ci(self, factor_name: str, ic_series: np.ndarray) -> BootstrapCIResult:
         """Compute block-bootstrap CI for mean |IC|.
 
         Parameters
@@ -170,9 +170,7 @@ class BootstrapICTester:
             # Sample block start indices with replacement
             starts = self._rng.randint(0, max_start + 1, size=n_blocks)
             # Concatenate blocks and truncate to length T
-            indices = np.concatenate(
-                [np.arange(s, s + block_size) for s in starts]
-            )[:T]
+            indices = np.concatenate([np.arange(s, s + block_size) for s in starts])[:T]
             boot_means[i] = series[indices].mean()
 
         return boot_means
@@ -181,6 +179,7 @@ class BootstrapICTester:
 # ---------------------------------------------------------------------------
 # FDR Control (Benjamini-Hochberg)
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class FDRResult:
@@ -289,6 +288,7 @@ class FDRController:
 # Deflated Sharpe Ratio
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class DeflatedSharpeResult:
     """Result of Deflated Sharpe Ratio test."""
@@ -380,7 +380,7 @@ class DeflatedSharpeCalculator:
         gamma4 = float(kurtosis(valid, fisher=True, bias=False))  # excess kurtosis
 
         # Variance correction incorporating skewness and kurtosis
-        var_correction = (1.0 - gamma3 * SR + (gamma4 - 1.0) / 4.0 * SR ** 2) / T
+        var_correction = (1.0 - gamma3 * SR + (gamma4 - 1.0) / 4.0 * SR**2) / T
 
         if var_correction <= 0:
             deflated_sr = 0.0
@@ -390,9 +390,7 @@ class DeflatedSharpeCalculator:
         p_value = 1.0 - float(norm.cdf(deflated_sr))
         haircut = SR - deflated_sr
 
-        passes = (
-            deflated_sr > self._config.min_deflated_sharpe and p_value < 0.05
-        )
+        passes = deflated_sr > self._config.min_deflated_sharpe and p_value < 0.05
 
         return DeflatedSharpeResult(
             factor_name=factor_name,
@@ -421,6 +419,7 @@ class DeflatedSharpeCalculator:
 # ---------------------------------------------------------------------------
 # Convenience entry point
 # ---------------------------------------------------------------------------
+
 
 def check_significance(
     factor_name: str,

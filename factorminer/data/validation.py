@@ -153,7 +153,9 @@ def validate_market_data(
             )
         )
 
-    canonical_df = raw_df.rename(columns={source: canonical for canonical, source in mapping.items()})
+    canonical_df = raw_df.rename(
+        columns={source: canonical for canonical, source in mapping.items()}
+    )
     report.row_count = int(len(canonical_df))
 
     if "datetime" in canonical_df.columns:
@@ -265,10 +267,7 @@ def validate_market_data(
             ValidationIssue(
                 severity="warning",
                 code="leakage-risk",
-                message=(
-                    "Potential leakage-risk column names detected: "
-                    f"{', '.join(future_like)}"
-                ),
+                message=(f"Potential leakage-risk column names detected: {', '.join(future_like)}"),
             )
         )
 
@@ -323,10 +322,7 @@ def render_validation_report(report: DataValidationReport, strict: bool = False)
             else:
                 lines.append(f"  {canonical} <- {source} (alias)")
     if report.missing_required_columns:
-        lines.append(
-            "Missing required columns: "
-            + ", ".join(report.missing_required_columns)
-        )
+        lines.append("Missing required columns: " + ", ".join(report.missing_required_columns))
     else:
         lines.append("Missing required columns: none")
     lines.append("")
@@ -336,9 +332,7 @@ def render_validation_report(report: DataValidationReport, strict: bool = False)
     if report.missingness_by_column:
         for col in REQUIRED_COLUMNS:
             if col in report.missingness_by_column:
-                lines.append(
-                    f"  {col}: {report.missingness_by_column[col] * 100:.2f}% missing"
-                )
+                lines.append(f"  {col}: {report.missingness_by_column[col] * 100:.2f}% missing")
     else:
         lines.append("  No missingness metrics available.")
     lines.append("")

@@ -17,6 +17,7 @@ from factorminer.evaluation.metrics import compute_ic, compute_icir
 # Configuration
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class CapacityConfig:
     """Configuration for capacity-aware backtesting.
@@ -49,9 +50,7 @@ class CapacityConfig:
 
     enabled: bool = True
     base_capital_usd: float = 1e8
-    capacity_levels: list[float] = field(
-        default_factory=lambda: [1e7, 5e7, 1e8, 5e8, 1e9]
-    )
+    capacity_levels: list[float] = field(default_factory=lambda: [1e7, 5e7, 1e8, 5e8, 1e9])
     ic_degradation_limit: float = 0.20
     net_icir_threshold: float = 0.3
     sigma_annual: float = 0.25
@@ -64,6 +63,7 @@ class CapacityConfig:
 # ---------------------------------------------------------------------------
 # Result containers
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class MarketImpactEstimate:
@@ -147,6 +147,7 @@ class NetCostResult:
 # ---------------------------------------------------------------------------
 # Square-root market impact model
 # ---------------------------------------------------------------------------
+
 
 class MarketImpactModel:
     """Square-root market impact model.
@@ -239,6 +240,7 @@ class MarketImpactModel:
 # ---------------------------------------------------------------------------
 # Capacity estimator
 # ---------------------------------------------------------------------------
+
 
 class CapacityEstimator:
     """Evaluate factor capacity and net-of-cost performance.

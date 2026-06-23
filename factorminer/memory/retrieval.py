@@ -39,6 +39,7 @@ def _score_success_pattern(
     # Occurrence count bonus (log scale to avoid runaway)
     if pattern.occurrence_count > 0:
         import math
+
         base_score *= 1.0 + math.log1p(pattern.occurrence_count)
 
     # Domain saturation penalty
@@ -68,16 +69,13 @@ def _score_forbidden_direction(
     # Occurrence count: frequently encountered = important warning
     if direction.occurrence_count > 0:
         import math
+
         base_score *= 1.0 + math.log1p(direction.occurrence_count)
 
     # Boost if matching recent rejections
     direction_lower = direction.name.lower()
     for reason in recent_rejection_reasons:
-        if any(
-            word in reason.lower()
-            for word in direction_lower.split()
-            if len(word) > 3
-        ):
+        if any(word in reason.lower() for word in direction_lower.split() if len(word) > 3):
             base_score *= 1.5
             break
 
@@ -93,10 +91,7 @@ def _select_relevant_success(
     if not patterns:
         return []
 
-    scored = [
-        (pat, _score_success_pattern(pat, domain_saturation))
-        for pat in patterns
-    ]
+    scored = [(pat, _score_success_pattern(pat, domain_saturation)) for pat in patterns]
     scored.sort(key=lambda x: x[1], reverse=True)
     return [pat for pat, _ in scored[:max_patterns]]
 
@@ -110,13 +105,8 @@ def _select_relevant_forbidden(
     if not directions:
         return []
 
-    recent_reasons = [
-        r.get("reason", "") for r in recent_rejections
-    ]
-    scored = [
-        (d, _score_forbidden_direction(d, recent_reasons))
-        for d in directions
-    ]
+    recent_reasons = [r.get("reason", "") for r in recent_rejections]
+    scored = [(d, _score_forbidden_direction(d, recent_reasons)) for d in directions]
     scored.sort(key=lambda x: x[1], reverse=True)
     return [d for d, _ in scored[:max_directions]]
 
@@ -124,11 +114,7 @@ def _select_relevant_forbidden(
 def _format_library_state(state: MiningState) -> dict[str, Any]:
     """Format mining state as structured context for LLM prompt."""
     # Identify saturated domains
-    saturated = {
-        domain: sat
-        for domain, sat in state.domain_saturation.items()
-        if sat >= 0.5
-    }
+    saturated = {domain: sat for domain, sat in state.domain_saturation.items() if sat >= 0.5}
 
     # Recent admission rate trend
     recent_logs = state.admission_log[-5:] if state.admission_log else []
@@ -205,6 +191,7 @@ def _format_for_prompt(
 # Public API: Memory Retrieval
 # ---------------------------------------------------------------------------
 
+
 def retrieve_memory(
     memory: ExperienceMemory,
     library_state: dict[str, Any] | None = None,
@@ -266,9 +253,7 @@ def retrieve_memory(
     )
 
     # Select most recent insights (up to limit)
-    sorted_insights = sorted(
-        memory.insights, key=lambda i: i.batch_source, reverse=True
-    )
+    sorted_insights = sorted(memory.insights, key=lambda i: i.batch_source, reverse=True)
     relevant_insights = sorted_insights[:max_insights]
 
     # Format library state
