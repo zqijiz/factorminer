@@ -26,6 +26,7 @@ _EPS = 1e-10
 # Node hierarchy
 # ---------------------------------------------------------------------------
 
+
 class Node(ABC):
     """Abstract base for every node in an expression tree."""
 
@@ -88,16 +89,14 @@ class LeafNode(Node):
     def __init__(self, feature_name: str) -> None:
         if feature_name not in FEATURE_SET:
             raise ValueError(
-                f"Unknown feature '{feature_name}'. "
-                f"Expected one of {sorted(FEATURE_SET)}."
+                f"Unknown feature '{feature_name}'. Expected one of {sorted(FEATURE_SET)}."
             )
         self.feature_name = feature_name
 
     def evaluate(self, data: dict[str, np.ndarray]) -> np.ndarray:
         if self.feature_name not in data:
             raise KeyError(
-                f"Feature '{self.feature_name}' not found in data. "
-                f"Available: {sorted(data.keys())}"
+                f"Feature '{self.feature_name}' not found in data. Available: {sorted(data.keys())}"
             )
         return data[self.feature_name].astype(np.float64, copy=False)
 
@@ -214,6 +213,7 @@ class OperatorNode(Node):
 # ---------------------------------------------------------------------------
 # Operator dispatch  (pure-numpy implementations)
 # ---------------------------------------------------------------------------
+
 
 def _safe_div(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Division that returns 0 where the denominator is near zero."""
@@ -346,7 +346,7 @@ def _ts_beta(sx: np.ndarray, sy: np.ndarray) -> np.ndarray:
     my = np.nanmean(sy, axis=1, keepdims=True)
     mx = np.nanmean(sx, axis=1, keepdims=True)
     dy = sy - my
-    var_y = np.nansum(dy ** 2, axis=1)
+    var_y = np.nansum(dy**2, axis=1)
     cov_xy = np.nansum((sx - mx) * dy, axis=1)
     return np.where(var_y > _EPS, cov_xy / var_y, 0.0)
 
@@ -475,6 +475,7 @@ def _ts_linreg_resid(x: np.ndarray, window: int) -> np.ndarray:
 
 # Main dispatch table -------------------------------------------------------
 
+
 def _dispatch_operator(
     spec: OperatorSpec,
     children: list[np.ndarray],
@@ -548,9 +549,7 @@ def _dispatch_operator(
         return _rolling_apply(children[0], w, _ts_rank)
     if name == "Quantile":
         q = params.get("q", 0.5)
-        return _rolling_apply(
-            children[0], w, lambda sx: np.nanquantile(sx, q, axis=1)
-        )
+        return _rolling_apply(children[0], w, lambda sx: np.nanquantile(sx, q, axis=1))
     if name == "CountNaN":
         return _rolling_apply(
             children[0], w, lambda sx: np.sum(np.isnan(sx), axis=1).astype(np.float64)
@@ -584,7 +583,10 @@ def _dispatch_operator(
         M, T = children[0].shape
         out = np.full_like(children[0], np.nan, dtype=np.float64)
         if w < T:
-            ratio = _safe_div(children[0][:, w:], np.where(np.abs(children[0][:, :-w]) > _EPS, children[0][:, :-w], 1.0))
+            ratio = _safe_div(
+                children[0][:, w:],
+                np.where(np.abs(children[0][:, :-w]) > _EPS, children[0][:, :-w], 1.0),
+            )
             out[:, w:] = np.log(np.abs(ratio) + _EPS)
         return out
     if name == "Corr":
@@ -677,6 +679,7 @@ def _dispatch_operator(
 # ---------------------------------------------------------------------------
 # Expression tree wrapper
 # ---------------------------------------------------------------------------
+
 
 class ExpressionTree:
     """Wrapper around a root ``Node`` providing a convenient API.

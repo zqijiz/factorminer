@@ -7,6 +7,7 @@ import pytest
 
 try:
     from factorminer.core.helix_loop import HelixLoop
+
     HAS_HELIX = True
 except ImportError:
     HAS_HELIX = False
@@ -39,6 +40,7 @@ def small_tensor(rng):
 # HelixLoop can be instantiated with all defaults
 # -----------------------------------------------------------------------
 
+
 def test_helix_loop_instantiates_with_defaults(small_tensor):
     """HelixLoop with all features off should be instantiable."""
     data, returns = small_tensor
@@ -61,6 +63,7 @@ def test_helix_loop_instantiates_with_defaults(small_tensor):
 # HelixLoop with canonicalize=True
 # -----------------------------------------------------------------------
 
+
 def test_helix_loop_canonicalize_flag(small_tensor):
     """HelixLoop with canonicalize=True should initialize the canonicalizer."""
     data, returns = small_tensor
@@ -80,6 +83,7 @@ def test_helix_loop_canonicalize_flag(small_tensor):
 # -----------------------------------------------------------------------
 # HelixLoop with MockProvider runs 1 iteration
 # -----------------------------------------------------------------------
+
 
 def test_helix_loop_runs_one_iteration(small_tensor):
     """HelixLoop should complete 1 iteration without error using MockProvider."""

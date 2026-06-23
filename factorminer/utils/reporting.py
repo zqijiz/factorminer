@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 # Data classes for structured logging
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class FactorAdmissionRecord:
     """Record of a single factor admission."""
@@ -85,6 +86,7 @@ class BatchRecord:
 # ---------------------------------------------------------------------------
 # MiningReporter
 # ---------------------------------------------------------------------------
+
 
 class MiningReporter:
     """Track and report mining session progress.
@@ -247,7 +249,7 @@ class MiningReporter:
             lines.append("")
             lines.append("  Admitted Factors:")
             lines.append(f"  {'ID':>4}  {'IC':>8}  {'ICIR':>8}  {'MaxCorr':>8}  Name")
-            lines.append(f"  {'-'*4}  {'-'*8}  {'-'*8}  {'-'*8}  {'-'*20}")
+            lines.append(f"  {'-' * 4}  {'-' * 8}  {'-' * 8}  {'-' * 8}  {'-' * 20}")
             for f in batch.admitted_factors:
                 lines.append(
                     f"  {f.factor_id:>4}  {f.ic:>8.4f}  {f.icir:>8.3f}  "
@@ -303,12 +305,16 @@ class MiningReporter:
             f"{'#' * 60}",
             "",
             f"  Total batches:           {len(self.batches):>6}",
-            f"  Total elapsed:           {elapsed:>6.0f}s ({elapsed/60:.1f}m)",
+            f"  Total elapsed:           {elapsed:>6.0f}s ({elapsed / 60:.1f}m)",
             "",
             "  --- Cumulative Pipeline ---",
             f"  Candidates generated:    {total_candidates:>6}",
-            f"  IC screen passed:        {total_ic_passed:>6} ({total_ic_passed/total_candidates:.1%})" if total_candidates > 0 else f"  IC screen passed:        {total_ic_passed:>6}",
-            f"  Correlation passed:      {total_corr_passed:>6} ({total_corr_passed/total_candidates:.1%})" if total_candidates > 0 else f"  Correlation passed:      {total_corr_passed:>6}",
+            f"  IC screen passed:        {total_ic_passed:>6} ({total_ic_passed / total_candidates:.1%})"
+            if total_candidates > 0
+            else f"  IC screen passed:        {total_ic_passed:>6}",
+            f"  Correlation passed:      {total_corr_passed:>6} ({total_corr_passed / total_candidates:.1%})"
+            if total_candidates > 0
+            else f"  Correlation passed:      {total_corr_passed:>6}",
             f"  Admitted:                {total_admitted:>6} ({overall_yield:.1%})",
             f"  Replaced:                {total_replaced:>6}",
             f"  Rejected:                {total_rejected:>6}",
@@ -325,7 +331,9 @@ class MiningReporter:
                 f"  {'Batch':>5}  {'Cand':>5}  {'IC':>4}  {'Corr':>4}  "
                 f"{'Adm':>4}  {'Rep':>4}  {'Lib':>4}  {'Yield':>6}  {'Time':>6}"
             )
-            lines.append(f"  {'-'*5}  {'-'*5}  {'-'*4}  {'-'*4}  {'-'*4}  {'-'*4}  {'-'*4}  {'-'*6}  {'-'*6}")
+            lines.append(
+                f"  {'-' * 5}  {'-' * 5}  {'-' * 4}  {'-' * 4}  {'-' * 4}  {'-' * 4}  {'-' * 4}  {'-' * 6}  {'-' * 6}"
+            )
             for b in self.batches:
                 lines.append(
                     f"  {b.batch_num:>5}  {b.candidates:>5}  {b.ic_passed:>4}  "
@@ -338,10 +346,8 @@ class MiningReporter:
             top_factors = sorted(self.factor_admissions, key=lambda f: f.ic, reverse=True)[:10]
             lines.append("")
             lines.append("  --- Top 10 Factors by IC ---")
-            lines.append(
-                f"  {'ID':>4}  {'IC':>8}  {'ICIR':>8}  {'MaxCorr':>8}  Name"
-            )
-            lines.append(f"  {'-'*4}  {'-'*8}  {'-'*8}  {'-'*8}  {'-'*30}")
+            lines.append(f"  {'ID':>4}  {'IC':>8}  {'ICIR':>8}  {'MaxCorr':>8}  Name")
+            lines.append(f"  {'-' * 4}  {'-' * 8}  {'-' * 8}  {'-' * 8}  {'-' * 30}")
             for f in top_factors:
                 lines.append(
                     f"  {f.factor_id:>4}  {f.ic:>8.4f}  {f.icir:>8.3f}  "
@@ -413,14 +419,16 @@ class MiningReporter:
         if not self.batches:
             return
 
-        plt.rcParams.update({
-            "figure.facecolor": "white",
-            "axes.facecolor": "white",
-            "axes.grid": True,
-            "grid.alpha": 0.3,
-            "grid.linestyle": "--",
-            "figure.dpi": 150,
-        })
+        plt.rcParams.update(
+            {
+                "figure.facecolor": "white",
+                "axes.facecolor": "white",
+                "axes.grid": True,
+                "grid.alpha": 0.3,
+                "grid.linestyle": "--",
+                "figure.dpi": 150,
+            }
+        )
 
         batch_nums = [b.batch_num for b in self.batches]
         lib_sizes = [b.library_size for b in self.batches]
@@ -429,40 +437,71 @@ class MiningReporter:
         replaced_counts = [b.replaced for b in self.batches]
         rejected_counts = [b.rejected for b in self.batches]
 
-        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 10),
-                                             sharex=True,
-                                             gridspec_kw={"hspace": 0.15})
+        fig, (ax1, ax2, ax3) = plt.subplots(
+            3, 1, figsize=(12, 10), sharex=True, gridspec_kw={"hspace": 0.15}
+        )
 
         # Panel 1: Library size growth
-        ax1.plot(batch_nums, lib_sizes, color="#1565C0", linewidth=2.0,
-                 marker="o", markersize=3)
+        ax1.plot(batch_nums, lib_sizes, color="#1565C0", linewidth=2.0, marker="o", markersize=3)
         ax1.fill_between(batch_nums, lib_sizes, alpha=0.15, color="#1565C0")
         ax1.set_ylabel("Library Size")
         ax1.set_title("Mining Progress", fontsize=13, fontweight="bold")
         if lib_sizes:
-            ax1.text(batch_nums[-1], lib_sizes[-1],
-                     f"  {lib_sizes[-1]}", va="center", fontsize=9, color="#1565C0")
+            ax1.text(
+                batch_nums[-1],
+                lib_sizes[-1],
+                f"  {lib_sizes[-1]}",
+                va="center",
+                fontsize=9,
+                color="#1565C0",
+            )
 
         # Panel 2: Yield rate
-        ax2.bar(batch_nums, yield_rates, color="#43A047", alpha=0.7,
-                edgecolor="white", linewidth=0.5)
+        ax2.bar(
+            batch_nums, yield_rates, color="#43A047", alpha=0.7, edgecolor="white", linewidth=0.5
+        )
         if yield_rates:
             avg_yield = sum(yield_rates) / len(yield_rates)
-            ax2.axhline(y=avg_yield, color="#FF6F00", linestyle="--", linewidth=1.0,
-                        label=f"Avg = {avg_yield:.1f}%")
+            ax2.axhline(
+                y=avg_yield,
+                color="#FF6F00",
+                linestyle="--",
+                linewidth=1.0,
+                label=f"Avg = {avg_yield:.1f}%",
+            )
             ax2.legend(fontsize=8, loc="upper right")
         ax2.set_ylabel("Yield Rate (%)")
         ax2.set_ylim(bottom=0)
 
         # Panel 3: Stacked bar of admitted / replaced / rejected
-        ax3.bar(batch_nums, admitted_counts, label="Admitted",
-                color="#43A047", edgecolor="white", linewidth=0.5)
-        ax3.bar(batch_nums, replaced_counts, bottom=admitted_counts,
-                label="Replaced", color="#FF8F00", edgecolor="white", linewidth=0.5)
+        ax3.bar(
+            batch_nums,
+            admitted_counts,
+            label="Admitted",
+            color="#43A047",
+            edgecolor="white",
+            linewidth=0.5,
+        )
+        ax3.bar(
+            batch_nums,
+            replaced_counts,
+            bottom=admitted_counts,
+            label="Replaced",
+            color="#FF8F00",
+            edgecolor="white",
+            linewidth=0.5,
+        )
         bottoms = [a + r for a, r in zip(admitted_counts, replaced_counts)]
-        ax3.bar(batch_nums, rejected_counts, bottom=bottoms,
-                label="Rejected", color="#E53935", alpha=0.6,
-                edgecolor="white", linewidth=0.5)
+        ax3.bar(
+            batch_nums,
+            rejected_counts,
+            bottom=bottoms,
+            label="Rejected",
+            color="#E53935",
+            alpha=0.6,
+            edgecolor="white",
+            linewidth=0.5,
+        )
         ax3.set_ylabel("Candidates")
         ax3.set_xlabel("Batch Number")
         ax3.legend(loc="upper right", fontsize=8)
@@ -490,7 +529,9 @@ class MiningReporter:
             "total_admitted": total_admitted,
             "total_replaced": total_replaced,
             "total_rejected": total_candidates - total_admitted - total_replaced,
-            "overall_yield_rate": total_admitted / total_candidates if total_candidates > 0 else 0.0,
+            "overall_yield_rate": total_admitted / total_candidates
+            if total_candidates > 0
+            else 0.0,
             "final_library_size": self.batches[-1].library_size if self.batches else 0,
             "total_elapsed_seconds": time.time() - self._session_start,
         }

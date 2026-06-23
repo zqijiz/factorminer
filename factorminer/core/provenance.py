@@ -89,15 +89,11 @@ def _compact_memory_signal(memory_signal: Mapping[str, Any] | None) -> dict[str,
             memory_signal.get("forbidden_directions", [])
         ),
         "insight_count": len(memory_signal.get("insights", []) or []),
-        "semantic_neighbors": _compact_reference_list(
-            memory_signal.get("semantic_neighbors", [])
-        ),
+        "semantic_neighbors": _compact_reference_list(memory_signal.get("semantic_neighbors", [])),
         "semantic_duplicates": _compact_reference_list(
             memory_signal.get("semantic_duplicates", [])
         ),
-        "semantic_gaps": _compact_reference_list(
-            memory_signal.get("semantic_gaps", [])
-        ),
+        "semantic_gaps": _compact_reference_list(memory_signal.get("semantic_gaps", [])),
         "complementary_patterns": _compact_reference_list(
             memory_signal.get("complementary_patterns", [])
         ),

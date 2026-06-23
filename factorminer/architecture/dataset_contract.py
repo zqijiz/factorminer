@@ -56,10 +56,7 @@ class DatasetContract:
             test_period=list(getattr(cfg.data, "test_period", [])),
             asset_count=int(_safe_len(asset_ids)),
             period_count=int(_safe_len(timestamps)),
-            split_sizes={
-                name: int(getattr(split, "size", 0))
-                for name, split in splits.items()
-            },
+            split_sizes={name: int(getattr(split, "size", 0)) for name, split in splits.items()},
         )
 
     @classmethod

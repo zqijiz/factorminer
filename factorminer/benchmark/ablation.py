@@ -275,11 +275,11 @@ def _build_phase2_configs(flags: dict[str, bool]) -> dict[str, Any]:
         "debate_config": RuntimeDebateConfig() if flags.get("debate", True) else None,
         "causal_config": RuntimeCausalConfig(enabled=True) if flags.get("causal", True) else None,
         "regime_config": RuntimeRegimeConfig(enabled=True) if flags.get("regime", True) else None,
-        "capacity_config": RuntimeCapacityConfig(enabled=True) if flags.get("capacity", True) else None,
+        "capacity_config": RuntimeCapacityConfig(enabled=True)
+        if flags.get("capacity", True)
+        else None,
         "significance_config": (
-            RuntimeSignificanceConfig(enabled=True)
-            if flags.get("significance", True)
-            else None
+            RuntimeSignificanceConfig(enabled=True) if flags.get("significance", True) else None
         ),
         "canonicalize": flags.get("canonicalize", True),
     }
@@ -516,11 +516,15 @@ class AblatedMethodRunner:
                 regime_config=phase2["regime_config"],
                 capacity_config=phase2["capacity_config"],
                 significance_config=phase2["significance_config"],
-                volume=np.asarray(train_data.get("$amt", train_data["forward_returns"]), dtype=np.float64)
+                volume=np.asarray(
+                    train_data.get("$amt", train_data["forward_returns"]), dtype=np.float64
+                )
                 if "$amt" in train_data
                 else None,
             )
-            with _patched_memory_hooks(self._cfg.get("memory", True) and self._cfg.get("online_memory", True)):
+            with _patched_memory_hooks(
+                self._cfg.get("memory", True) and self._cfg.get("online_memory", True)
+            ):
                 loop.run(
                     target_size=target_library_size,
                     max_iterations=max_iterations,
@@ -677,19 +681,21 @@ class AblationStudy:
             else:
                 interpretation = "Hurts (unexpected direction)"
 
-            rows.append({
-                "component": component,
-                "ablation_config": ablation_key,
-                "ic_full": full.library_ic,
-                "ic_ablated": ablated.library_ic,
-                "ic_contribution": ic_contrib,
-                "ic_contribution_pct": ic_contrib / max(full.library_ic, 1e-6) * 100,
-                "icir_full": full.library_icir,
-                "icir_ablated": ablated.library_icir,
-                "icir_contribution": icir_contrib,
-                "admission_rate_delta": adm_delta,
-                "interpretation": interpretation,
-            })
+            rows.append(
+                {
+                    "component": component,
+                    "ablation_config": ablation_key,
+                    "ic_full": full.library_ic,
+                    "ic_ablated": ablated.library_ic,
+                    "ic_contribution": ic_contrib,
+                    "ic_contribution_pct": ic_contrib / max(full.library_ic, 1e-6) * 100,
+                    "icir_full": full.library_icir,
+                    "icir_ablated": ablated.library_icir,
+                    "icir_contribution": icir_contrib,
+                    "admission_rate_delta": adm_delta,
+                    "interpretation": interpretation,
+                }
+            )
 
         df = pd.DataFrame(rows)
         if not df.empty:

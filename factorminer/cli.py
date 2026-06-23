@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _setup_logging(verbose: bool) -> None:
     """Configure root logger for CLI output."""
     level = logging.DEBUG if verbose else logging.INFO
@@ -144,9 +145,7 @@ def _prepare_data_arrays(df):
     for i in range(M):
         close = data_tensor[i, :, close_idx]
         asset_returns = np.full(T, np.nan, dtype=np.float64)
-        asset_returns[1:] = (close[1:] - close[:-1]) / np.where(
-            close[:-1] == 0, np.nan, close[:-1]
-        )
+        asset_returns[1:] = (close[1:] - close[:-1]) / np.where(close[:-1] == 0, np.nan, close[:-1])
         missing_feature_returns = np.isnan(data_tensor[i, :, feature_returns_idx])
         data_tensor[i, :, feature_returns_idx] = np.where(
             missing_feature_returns,
@@ -155,9 +154,7 @@ def _prepare_data_arrays(df):
         )
 
         # Simple 1-period forward return target.
-        returns[i, :-1] = (close[1:] - close[:-1]) / np.where(
-            close[:-1] == 0, np.nan, close[:-1]
-        )
+        returns[i, :-1] = (close[1:] - close[:-1]) / np.where(close[:-1] == 0, np.nan, close[:-1])
 
     return data_tensor, returns
 
@@ -190,9 +187,7 @@ def _build_core_mining_config(cfg, output_dir: Path, mock: bool = False):
     """Create the flat mining config expected by RalphLoop/HelixLoop."""
     from factorminer.core.config import MiningConfig as CoreMiningConfig
 
-    signal_failure_policy = (
-        "synthetic" if mock else cfg.evaluation.signal_failure_policy
-    )
+    signal_failure_policy = "synthetic" if mock else cfg.evaluation.signal_failure_policy
     memory_cfg = getattr(cfg, "memory", None)
 
     mining_cfg = CoreMiningConfig(
@@ -245,11 +240,7 @@ def _filter_dataclass_kwargs(source, target_cls):
     """Copy shared dataclass fields from one config object to another."""
     target_fields = {f.name for f in fields(target_cls)}
     source_fields = getattr(source, "__dataclass_fields__", {})
-    return {
-        name: getattr(source, name)
-        for name in source_fields
-        if name in target_fields
-    }
+    return {name: getattr(source, name) for name in source_fields if name in target_fields}
 
 
 def _build_debate_config(cfg):
@@ -536,9 +527,11 @@ def _load_library_from_path(library_path: str):
 # Global options
 # ---------------------------------------------------------------------------
 
+
 @click.group()
 @click.option(
-    "--config", "-c",
+    "--config",
+    "-c",
     type=click.Path(exists=True, dir_okay=False),
     default=None,
     help="Path to a YAML config file (merges with defaults).",
@@ -546,7 +539,8 @@ def _load_library_from_path(library_path: str):
 @click.option("--gpu/--cpu", default=True, help="Enable or disable GPU evaluation backend.")
 @click.option("--verbose", "-v", is_flag=True, help="Enable debug-level logging.")
 @click.option(
-    "--output-dir", "-o",
+    "--output-dir",
+    "-o",
     type=click.Path(file_okay=False),
     default="output",
     help="Directory for all output artifacts.",
@@ -572,6 +566,7 @@ def main(ctx: click.Context, config: str | None, gpu: bool, verbose: bool, outpu
         import yaml
 
         from factorminer.configs import DEFAULT_CONFIG_PATH
+
         raw = {}
         if DEFAULT_CONFIG_PATH.exists():
             with open(DEFAULT_CONFIG_PATH) as f:
@@ -596,6 +591,7 @@ def main(ctx: click.Context, config: str | None, gpu: bool, verbose: bool, outpu
 # ---------------------------------------------------------------------------
 # validate-data
 # ---------------------------------------------------------------------------
+
 
 @main.command("validate-data")
 @click.argument("path", type=click.Path(exists=True, dir_okay=False))
@@ -646,6 +642,7 @@ def validate_data(
 # ---------------------------------------------------------------------------
 # report
 # ---------------------------------------------------------------------------
+
 
 @main.command()
 @click.argument("library_path", type=click.Path(exists=True))
@@ -706,13 +703,22 @@ def report(
 # mine
 # ---------------------------------------------------------------------------
 
+
 @main.command()
 @click.option("--iterations", "-n", type=int, default=None, help="Override max_iterations.")
 @click.option("--batch-size", "-b", type=int, default=None, help="Override batch_size.")
 @click.option("--target", "-t", type=int, default=None, help="Override target_library_size.")
-@click.option("--resume", type=click.Path(exists=True), default=None, help="Resume from a saved library.")
+@click.option(
+    "--resume", type=click.Path(exists=True), default=None, help="Resume from a saved library."
+)
 @click.option("--mock", is_flag=True, help="Use mock data and mock LLM provider (for testing).")
-@click.option("--data", "data_path", type=click.Path(exists=True), default=None, help="Path to market data file.")
+@click.option(
+    "--data",
+    "data_path",
+    type=click.Path(exists=True),
+    default=None,
+    help="Path to market data file.",
+)
 @click.pass_context
 def mine(
     ctx: click.Context,
@@ -759,8 +765,7 @@ def mine(
         raise click.Abort()
 
     click.echo(
-        f"  Data loaded: {len(dataset.asset_ids)} assets x "
-        f"{len(dataset.timestamps)} periods"
+        f"  Data loaded: {len(dataset.asset_ids)} assets x {len(dataset.timestamps)} periods"
     )
     click.echo("  Preparing data tensors...")
     data_tensor = dataset.data_tensor
@@ -827,11 +832,23 @@ def mine(
 # evaluate
 # ---------------------------------------------------------------------------
 
+
 @main.command()
 @click.argument("library_path", type=click.Path(exists=True))
-@click.option("--data", "data_path", type=click.Path(exists=True), default=None, help="Path to market data file.")
+@click.option(
+    "--data",
+    "data_path",
+    type=click.Path(exists=True),
+    default=None,
+    help="Path to market data file.",
+)
 @click.option("--mock", is_flag=True, help="Use mock data for evaluation.")
-@click.option("--period", type=click.Choice(["train", "test", "both"]), default="test", help="Evaluation period.")
+@click.option(
+    "--period",
+    type=click.Choice(["train", "test", "both"]),
+    default="test",
+    help="Evaluation period.",
+)
 @click.option("--top-k", type=int, default=None, help="Evaluate only the top-K factors by IC.")
 @click.pass_context
 def evaluate(
@@ -860,9 +877,7 @@ def evaluate(
         raise click.Abort()
 
     click.echo(f"  Period: {period} | Backend: {cfg.evaluation.backend}")
-    click.echo(
-        f"  Data: {len(dataset.asset_ids)} assets x {len(dataset.timestamps)} periods"
-    )
+    click.echo(f"  Data: {len(dataset.asset_ids)} assets x {len(dataset.timestamps)} periods")
 
     artifacts = _recompute_analysis_artifacts(library, dataset, signal_failure_policy)
     failures = _report_artifact_failures(artifacts, header="Evaluation warnings")
@@ -893,7 +908,9 @@ def evaluate(
     if period == "both" and selected:
         click.echo("-" * 60)
         click.echo("Decay summary (train -> test)")
-        click.echo(f"{'ID':>4s}  {'Name':<35s}  {'Train |IC|':>10s}  {'Test |IC|':>9s}  {'Delta':>8s}")
+        click.echo(
+            f"{'ID':>4s}  {'Name':<35s}  {'Train |IC|':>10s}  {'Test |IC|':>9s}  {'Delta':>8s}"
+        )
         click.echo("-" * 80)
         for artifact in selected:
             train_ic = artifact.split_stats["train"]["ic_abs_mean"]
@@ -910,9 +927,16 @@ def evaluate(
 # combine
 # ---------------------------------------------------------------------------
 
+
 @main.command()
 @click.argument("library_path", type=click.Path(exists=True))
-@click.option("--data", "data_path", type=click.Path(exists=True), default=None, help="Path to market data file.")
+@click.option(
+    "--data",
+    "data_path",
+    type=click.Path(exists=True),
+    default=None,
+    help="Path to market data file.",
+)
 @click.option("--mock", is_flag=True, help="Use mock data for combination.")
 @click.option(
     "--fit-period",
@@ -927,13 +951,15 @@ def evaluate(
     help="Split used to evaluate the combined signal.",
 )
 @click.option(
-    "--method", "-m",
+    "--method",
+    "-m",
     type=click.Choice(["equal-weight", "ic-weighted", "orthogonal", "all"]),
     default="all",
     help="Factor combination method.",
 )
 @click.option(
-    "--selection", "-s",
+    "--selection",
+    "-s",
     type=click.Choice(["lasso", "stepwise", "xgboost", "none"]),
     default="none",
     help="Factor selection method to run before combination.",
@@ -1002,8 +1028,7 @@ def combine(
     selected_ids = [artifact.factor_id for artifact in selected_artifacts]
     fit_returns_tn = dataset.get_split(fit_split).returns.T
     fit_factor_signals = {
-        artifact.factor_id: artifact.split_signals[fit_split].T
-        for artifact in selected_artifacts
+        artifact.factor_id: artifact.split_signals[fit_split].T for artifact in selected_artifacts
     }
 
     if selection != "none":
@@ -1098,7 +1123,9 @@ def combine(
             research_path.write_text(json.dumps(research_reports, indent=2))
             for model_name, report in research_reports.items():
                 if not report.get("available", True):
-                    click.echo(f"    {model_name}: unavailable ({report.get('error', 'unknown error')})")
+                    click.echo(
+                        f"    {model_name}: unavailable ({report.get('error', 'unknown error')})"
+                    )
                     continue
                 click.echo(
                     f"    {model_name}: "
@@ -1118,18 +1145,40 @@ def combine(
 # visualize
 # ---------------------------------------------------------------------------
 
+
 @main.command()
 @click.argument("library_path", type=click.Path(exists=True))
-@click.option("--data", "data_path", type=click.Path(exists=True), default=None, help="Path to market data file.")
+@click.option(
+    "--data",
+    "data_path",
+    type=click.Path(exists=True),
+    default=None,
+    help="Path to market data file.",
+)
 @click.option("--mock", is_flag=True, help="Use mock data for visualization.")
-@click.option("--period", type=click.Choice(["train", "test", "both"]), default="test", help="Evaluation split to visualize.")
-@click.option("--factor-id", "factor_ids", type=int, multiple=True, help="Specific factor ID(s) to visualize.")
-@click.option("--top-k", type=int, default=None, help="Top-K factors by split |IC| for set-level plots.")
+@click.option(
+    "--period",
+    type=click.Choice(["train", "test", "both"]),
+    default="test",
+    help="Evaluation split to visualize.",
+)
+@click.option(
+    "--factor-id", "factor_ids", type=int, multiple=True, help="Specific factor ID(s) to visualize."
+)
+@click.option(
+    "--top-k", type=int, default=None, help="Top-K factors by split |IC| for set-level plots."
+)
 @click.option("--tearsheet", is_flag=True, help="Generate a full factor tear sheet.")
 @click.option("--correlation", is_flag=True, help="Plot factor correlation heatmap.")
 @click.option("--ic-timeseries", is_flag=True, help="Plot IC time series.")
 @click.option("--quintile", is_flag=True, help="Plot quintile returns.")
-@click.option("--format", "fmt", type=click.Choice(["png", "pdf", "svg"]), default="png", help="Output format.")
+@click.option(
+    "--format",
+    "fmt",
+    type=click.Choice(["png", "pdf", "svg"]),
+    default="png",
+    help="Output format.",
+)
 @click.pass_context
 def visualize(
     ctx: click.Context,
@@ -1215,7 +1264,9 @@ def visualize(
             if corr_artifacts:
                 click.echo("    Generating correlation heatmap...")
                 corr_matrix = compute_correlation_matrix(corr_artifacts, split_name)
-                save_path = _analysis_output_path(output_dir, "correlation_heatmap", split_name, fmt)
+                save_path = _analysis_output_path(
+                    output_dir, "correlation_heatmap", split_name, fmt
+                )
                 plot_correlation_heatmap(
                     corr_matrix,
                     [artifact.name[:20] for artifact in corr_artifacts],
@@ -1224,7 +1275,9 @@ def visualize(
                 )
                 click.echo(f"      Saved: {save_path}")
             else:
-                click.echo("    Skipped: no successfully recomputed factors for correlation heatmap.")
+                click.echo(
+                    "    Skipped: no successfully recomputed factors for correlation heatmap."
+                )
 
         factor_artifacts = explicit_artifacts
         if not factor_ids and (ic_timeseries or quintile or tearsheet):
@@ -1265,9 +1318,7 @@ def visualize(
                     fmt,
                 )
                 plot_quintile_returns(
-                    {
-                        f"Q{i}": stats[f"Q{i}"] for i in range(1, 6)
-                    }
+                    {f"Q{i}": stats[f"Q{i}"] for i in range(1, 6)}
                     | {
                         "long_short": stats["long_short"],
                         "monotonicity": stats["monotonicity"],
@@ -1307,10 +1358,12 @@ def visualize(
 # export
 # ---------------------------------------------------------------------------
 
+
 @main.command(name="export")
 @click.argument("library_path", type=click.Path(exists=True))
 @click.option(
-    "--format", "fmt",
+    "--format",
+    "fmt",
     type=click.Choice(["json", "csv", "formulas"]),
     default="json",
     help="Export format.",
@@ -1373,6 +1426,7 @@ def export_cmd(ctx: click.Context, library_path: str, fmt: str, output: str | No
 # benchmark
 # ---------------------------------------------------------------------------
 
+
 @main.group()
 def benchmark() -> None:
     """Run strict paper/research benchmark workflows."""
@@ -1407,7 +1461,9 @@ def _benchmark_common_options(fn):
 
 
 @benchmark.command("table1")
-@click.option("--baseline", "baselines", multiple=True, help="Restrict to one or more baseline ids.")
+@click.option(
+    "--baseline", "baselines", multiple=True, help="Restrict to one or more baseline ids."
+)
 @_benchmark_common_options
 def benchmark_table1(
     ctx: click.Context,
@@ -1553,17 +1609,32 @@ def benchmark_suite(
 # helix
 # ---------------------------------------------------------------------------
 
+
 @main.command()
 @click.option("--iterations", "-n", type=int, default=None, help="Override max_iterations.")
 @click.option("--batch-size", "-b", type=int, default=None, help="Override batch_size.")
 @click.option("--target", "-t", type=int, default=None, help="Override target_library_size.")
-@click.option("--resume", type=click.Path(exists=True), default=None, help="Resume from a saved library.")
+@click.option(
+    "--resume", type=click.Path(exists=True), default=None, help="Resume from a saved library."
+)
 @click.option("--causal/--no-causal", default=None, help="Enable/disable causal validation.")
-@click.option("--regime/--no-regime", default=None, help="Enable/disable regime-conditional evaluation.")
-@click.option("--debate/--no-debate", default=None, help="Enable/disable multi-specialist debate generation.")
-@click.option("--canonicalize/--no-canonicalize", default=None, help="Enable/disable SymPy canonicalization.")
+@click.option(
+    "--regime/--no-regime", default=None, help="Enable/disable regime-conditional evaluation."
+)
+@click.option(
+    "--debate/--no-debate", default=None, help="Enable/disable multi-specialist debate generation."
+)
+@click.option(
+    "--canonicalize/--no-canonicalize", default=None, help="Enable/disable SymPy canonicalization."
+)
 @click.option("--mock", is_flag=True, help="Use mock data and mock LLM provider (for testing).")
-@click.option("--data", "data_path", type=click.Path(exists=True), default=None, help="Path to market data file.")
+@click.option(
+    "--data",
+    "data_path",
+    type=click.Path(exists=True),
+    default=None,
+    help="Path to market data file.",
+)
 @click.pass_context
 def helix(
     ctx: click.Context,
@@ -1609,15 +1680,19 @@ def helix(
     enabled_features = _active_phase2_features(cfg)
 
     click.echo("HelixFactor Phase 2 mining engine.")
-    click.echo(f"  Target: {cfg.mining.target_library_size} | "
-               f"Batch: {cfg.mining.batch_size} | "
-               f"Max iterations: {cfg.mining.max_iterations}")
+    click.echo(
+        f"  Target: {cfg.mining.target_library_size} | "
+        f"Batch: {cfg.mining.batch_size} | "
+        f"Max iterations: {cfg.mining.max_iterations}"
+    )
     click.echo(f"  Output directory: {output_dir}")
 
     if enabled_features:
         click.echo(f"  Active Phase 2 features: {', '.join(enabled_features)}")
     else:
-        click.echo("  No Phase 2 features enabled. Configure phase2.* in your config to enable features.")
+        click.echo(
+            "  No Phase 2 features enabled. Configure phase2.* in your config to enable features."
+        )
 
     if resume:
         click.echo(f"  Resuming from: {resume}")
@@ -1673,14 +1748,10 @@ def helix(
             enable_knowledge_graph=(
                 cfg.phase2.helix.enabled and cfg.phase2.helix.enable_knowledge_graph
             ),
-            enable_embeddings=(
-                cfg.phase2.helix.enabled and cfg.phase2.helix.enable_embeddings
-            ),
+            enable_embeddings=(cfg.phase2.helix.enabled and cfg.phase2.helix.enable_embeddings),
             enable_auto_inventor=cfg.phase2.auto_inventor.enabled,
             auto_invention_interval=cfg.phase2.auto_inventor.invention_interval,
-            canonicalize=(
-                cfg.phase2.helix.enabled and cfg.phase2.helix.enable_canonicalization
-            ),
+            canonicalize=(cfg.phase2.helix.enabled and cfg.phase2.helix.enable_canonicalization),
             forgetting_lambda=cfg.phase2.helix.forgetting_lambda,
             causal_config=phase2_configs["causal_config"],
             regime_config=phase2_configs["regime_config"],

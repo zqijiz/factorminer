@@ -22,9 +22,7 @@ from factorminer.evaluation.runtime import (
 
 
 def _build_dataset(data_dict: dict[str, np.ndarray]) -> EvaluationDataset:
-    timestamps = np.array(
-        [np.datetime64("2024-01-01") + np.timedelta64(i, "D") for i in range(50)]
-    )
+    timestamps = np.array([np.datetime64("2024-01-01") + np.timedelta64(i, "D") for i in range(50)])
     returns = data_dict["$returns"]
     feature_order = [
         "$open",
@@ -102,15 +100,9 @@ def test_evaluate_factors_matches_direct_metric_computation(small_data):
         expected_test["ic_series"],
         equal_nan=True,
     )
-    assert artifact.split_stats["train"]["ic_mean"] == pytest.approx(
-        expected_train["ic_mean"]
-    )
-    assert artifact.split_stats["test"]["long_short"] == pytest.approx(
-        expected_test["long_short"]
-    )
-    assert artifact.split_stats["train"]["turnover"] == pytest.approx(
-        expected_train["turnover"]
-    )
+    assert artifact.split_stats["train"]["ic_mean"] == pytest.approx(expected_train["ic_mean"])
+    assert artifact.split_stats["test"]["long_short"] == pytest.approx(expected_test["long_short"])
+    assert artifact.split_stats["train"]["turnover"] == pytest.approx(expected_train["turnover"])
 
 
 def test_compute_tree_signals_obeys_failure_policy():

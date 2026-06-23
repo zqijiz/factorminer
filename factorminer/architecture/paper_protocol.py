@@ -95,7 +95,9 @@ class PaperProtocol:
             default_target=str(getattr(data_cfg, "default_target", "paper")),
             ic_metric="mean_absolute_spearman_ic",
             redundancy_metric=str(
-                getattr(eval_cfg, "redundancy_metric", getattr(cfg, "redundancy_metric", "spearman"))
+                getattr(
+                    eval_cfg, "redundancy_metric", getattr(cfg, "redundancy_metric", "spearman")
+                )
             ),
             ic_threshold=float(getattr(mining_cfg, "ic_threshold", 0.04)),
             icir_threshold=float(getattr(mining_cfg, "icir_threshold", 0.5)),

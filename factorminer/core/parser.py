@@ -46,13 +46,14 @@ from factorminer.core.types import FEATURE_SET, OPERATOR_REGISTRY
 # Tokenizer
 # ---------------------------------------------------------------------------
 
+
 class TokenType(Enum):
-    IDENT = auto()      # operator / function name
-    FEATURE = auto()    # $close, $volume, ...
-    NUMBER = auto()     # 0.0001, -3, 1e-6, ...
-    LPAREN = auto()     # (
-    RPAREN = auto()     # )
-    COMMA = auto()      # ,
+    IDENT = auto()  # operator / function name
+    FEATURE = auto()  # $close, $volume, ...
+    NUMBER = auto()  # 0.0001, -3, 1e-6, ...
+    LPAREN = auto()  # (
+    RPAREN = auto()  # )
+    COMMA = auto()  # ,
     EOF = auto()
 
 
@@ -115,8 +116,7 @@ def tokenize(source: str) -> list[Token]:
             m = _FEATURE_RE.match(source, pos)
             if not m:
                 raise SyntaxError(
-                    f"Invalid feature reference at position {pos}: "
-                    f"{source[pos:pos+20]!r}"
+                    f"Invalid feature reference at position {pos}: {source[pos : pos + 20]!r}"
                 )
             tokens.append(Token(TokenType.FEATURE, m.group(), pos))
             pos = m.end()
@@ -127,9 +127,9 @@ def tokenize(source: str) -> list[Token]:
             #   (b) the preceding token is LPAREN or COMMA
             if ch == "-":
                 prev_tok = tokens[-1] if tokens else None
-                is_unary_minus = (
-                    prev_tok is None
-                    or prev_tok.type in (TokenType.LPAREN, TokenType.COMMA)
+                is_unary_minus = prev_tok is None or prev_tok.type in (
+                    TokenType.LPAREN,
+                    TokenType.COMMA,
                 )
                 if not is_unary_minus:
                     raise SyntaxError(
@@ -138,26 +138,19 @@ def tokenize(source: str) -> list[Token]:
                     )
             m = _NUMBER_RE.match(source, pos)
             if not m:
-                raise SyntaxError(
-                    f"Invalid number at position {pos}: "
-                    f"{source[pos:pos+20]!r}"
-                )
+                raise SyntaxError(f"Invalid number at position {pos}: {source[pos : pos + 20]!r}")
             tokens.append(Token(TokenType.NUMBER, m.group(), pos))
             pos = m.end()
         elif ch.isalpha() or ch == "_":
             m = _IDENT_RE.match(source, pos)
             if not m:
                 raise SyntaxError(
-                    f"Invalid identifier at position {pos}: "
-                    f"{source[pos:pos+20]!r}"
+                    f"Invalid identifier at position {pos}: {source[pos : pos + 20]!r}"
                 )
             tokens.append(Token(TokenType.IDENT, m.group(), pos))
             pos = m.end()
         else:
-            raise SyntaxError(
-                f"Unexpected character {ch!r} at position {pos} in: "
-                f"{source!r}"
-            )
+            raise SyntaxError(f"Unexpected character {ch!r} at position {pos} in: {source!r}")
 
     tokens.append(Token(TokenType.EOF, "", length))
     return tokens
@@ -166,6 +159,7 @@ def tokenize(source: str) -> list[Token]:
 # ---------------------------------------------------------------------------
 # Recursive descent parser
 # ---------------------------------------------------------------------------
+
 
 class Parser:
     """Recursive-descent parser that converts a token stream to a ``Node``.
@@ -232,9 +226,7 @@ class Parser:
         try:
             return ConstantNode(float(tok.value))
         except ValueError:
-            raise SyntaxError(
-                f"Invalid numeric literal {tok.value!r} at position {tok.pos}."
-            )
+            raise SyntaxError(f"Invalid numeric literal {tok.value!r} at position {tok.pos}.")
 
     def _parse_function_call(self) -> Node:
         """Parse ``Name(arg1, arg2, ..., paramN)``."""
@@ -323,6 +315,7 @@ class Parser:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def parse(source: str) -> ExpressionTree:
     """Parse a factor formula string into an ``ExpressionTree``.

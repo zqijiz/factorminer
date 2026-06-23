@@ -16,6 +16,7 @@ from tqdm import tqdm
 # Structured data records
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class FactorRecord:
     """Log record for a single evaluated factor candidate."""
@@ -67,6 +68,7 @@ class IterationRecord:
 # JSON log exporter
 # ---------------------------------------------------------------------------
 
+
 class JSONLogExporter:
     """Collects structured records and exports them to a JSON file."""
 
@@ -108,6 +110,7 @@ class JSONLogExporter:
 # ---------------------------------------------------------------------------
 # Console formatter
 # ---------------------------------------------------------------------------
+
 
 class _ConsoleFormatter(logging.Formatter):
     """Compact colored formatter for terminal output."""
@@ -174,6 +177,7 @@ def setup_logger(
 # ---------------------------------------------------------------------------
 # Mining session logger (high-level helper)
 # ---------------------------------------------------------------------------
+
 
 class MiningSessionLogger:
     """High-level logger for an entire mining session.

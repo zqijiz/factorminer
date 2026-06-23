@@ -61,6 +61,7 @@ def _compile_operator_code(code: str) -> Callable | None:
 # CustomOperator
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class CustomOperator:
     """A validated, auto-invented operator ready for registration.
@@ -95,6 +96,7 @@ class CustomOperator:
 # ---------------------------------------------------------------------------
 # CustomOperatorStore
 # ---------------------------------------------------------------------------
+
 
 class CustomOperatorStore:
     """Manages custom operator lifecycle: register, persist, and reload.
@@ -162,9 +164,7 @@ class CustomOperatorStore:
                 "signature": op.spec.signature.name,
                 "param_names": list(op.spec.param_names),
                 "param_defaults": op.spec.param_defaults,
-                "param_ranges": {
-                    k: list(v) for k, v in op.spec.param_ranges.items()
-                },
+                "param_ranges": {k: list(v) for k, v in op.spec.param_ranges.items()},
                 "description": op.spec.description,
                 "validation_ic": op.validation_ic,
                 "invention_iteration": op.invention_iteration,
@@ -177,9 +177,7 @@ class CustomOperatorStore:
             json.dumps(index, indent=2, ensure_ascii=False),
             encoding="utf-8",
         )
-        logger.info(
-            "Saved %d custom operators to %s", len(index), self._store_dir
-        )
+        logger.info("Saved %d custom operators to %s", len(index), self._store_dir)
 
     def load(self) -> None:
         """Load custom operators from disk, recompile, and re-register.
@@ -206,9 +204,7 @@ class CustomOperatorStore:
             numpy_code = src_path.read_text(encoding="utf-8")
             fn = _compile_operator_code(numpy_code)
             if fn is None:
-                logger.warning(
-                    "Failed to recompile custom operator '%s'; skipping", name
-                )
+                logger.warning("Failed to recompile custom operator '%s'; skipping", name)
                 continue
 
             spec = OperatorSpec(
@@ -218,10 +214,7 @@ class CustomOperatorStore:
                 signature=SignatureType[entry["signature"]],
                 param_names=tuple(entry.get("param_names", [])),
                 param_defaults=entry.get("param_defaults", {}),
-                param_ranges={
-                    k: tuple(v)
-                    for k, v in entry.get("param_ranges", {}).items()
-                },
+                param_ranges={k: tuple(v) for k, v in entry.get("param_ranges", {}).items()},
                 description=entry.get("description", ""),
             )
 

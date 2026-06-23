@@ -44,6 +44,7 @@ logger = logging.getLogger(__name__)
 # Data types
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class CandidateFactor:
     """A candidate factor to be evaluated."""
@@ -155,6 +156,7 @@ class PipelineConfig:
 # Worker function for multiprocessing
 # ---------------------------------------------------------------------------
 
+
 def _evaluate_single_candidate_ic(
     signals: np.ndarray,
     returns: np.ndarray,
@@ -173,6 +175,7 @@ def _evaluate_single_candidate_ic(
 # ---------------------------------------------------------------------------
 # Validation Pipeline
 # ---------------------------------------------------------------------------
+
 
 class ValidationPipeline:
     """Multi-stage factor evaluation pipeline.
@@ -244,9 +247,7 @@ class ValidationPipeline:
 
         results: dict[str, EvaluationResult] = {}
 
-        logger.info(
-            "Starting pipeline evaluation for %d candidates", len(candidates)
-        )
+        logger.info("Starting pipeline evaluation for %d candidates", len(candidates))
 
         # Stage 1: Fast IC screening
         passed_s1, failed_s1 = self._stage1_ic_screen(candidates)
@@ -254,21 +255,22 @@ class ValidationPipeline:
             results[c.name] = result
         logger.info(
             "Stage 1 (IC screen): %d passed, %d failed",
-            len(passed_s1), len(failed_s1),
+            len(passed_s1),
+            len(failed_s1),
         )
 
         if not passed_s1:
             return list(results.values())
 
         # Stage 2: Correlation check against library
-        passed_s2, failed_s2, replacement_candidates = self._stage2_correlation_check(
-            passed_s1
-        )
+        passed_s2, failed_s2, replacement_candidates = self._stage2_correlation_check(passed_s1)
         for c, result in failed_s2:
             results[c.name] = result
         logger.info(
             "Stage 2 (correlation): %d passed, %d failed, %d for replacement",
-            len(passed_s2), len(failed_s2), len(replacement_candidates),
+            len(passed_s2),
+            len(failed_s2),
+            len(replacement_candidates),
         )
 
         # Stage 2.5: Replacement check
@@ -292,7 +294,8 @@ class ValidationPipeline:
             results[c.name] = result
         logger.info(
             "Stage 3 (dedup): %d passed, %d failed",
-            len(passed_s3), len(failed_s3),
+            len(passed_s3),
+            len(failed_s3),
         )
 
         # Stage 4: Full validation
@@ -335,12 +338,17 @@ class ValidationPipeline:
 
         for c in candidates:
             if c.signals is None:
-                failed.append((c, EvaluationResult(
-                    factor_name=c.name,
-                    formula=c.formula,
-                    stage_passed=0,
-                    rejection_reason="No signals computed",
-                )))
+                failed.append(
+                    (
+                        c,
+                        EvaluationResult(
+                            factor_name=c.name,
+                            formula=c.formula,
+                            stage_passed=0,
+                            rejection_reason="No signals computed",
+                        ),
+                    )
+                )
                 continue
 
             # Use fast subset
@@ -349,25 +357,35 @@ class ValidationPipeline:
             valid_ic = ic_series[~np.isnan(ic_series)]
 
             if len(valid_ic) == 0:
-                failed.append((c, EvaluationResult(
-                    factor_name=c.name,
-                    formula=c.formula,
-                    stage_passed=0,
-                    rejection_reason="No valid IC values",
-                )))
+                failed.append(
+                    (
+                        c,
+                        EvaluationResult(
+                            factor_name=c.name,
+                            formula=c.formula,
+                            stage_passed=0,
+                            rejection_reason="No valid IC values",
+                        ),
+                    )
+                )
                 continue
 
             ic_abs_mean = float(np.mean(np.abs(valid_ic)))
 
             if ic_abs_mean < threshold:
-                failed.append((c, EvaluationResult(
-                    factor_name=c.name,
-                    formula=c.formula,
-                    ic_series=ic_series,
-                    ic_mean=ic_abs_mean,
-                    stage_passed=0,
-                    rejection_reason=f"Stage 1: |IC|={ic_abs_mean:.4f} < {threshold}",
-                )))
+                failed.append(
+                    (
+                        c,
+                        EvaluationResult(
+                            factor_name=c.name,
+                            formula=c.formula,
+                            ic_series=ic_series,
+                            ic_mean=ic_abs_mean,
+                            stage_passed=0,
+                            rejection_reason=f"Stage 1: |IC|={ic_abs_mean:.4f} < {threshold}",
+                        ),
+                    )
+                )
             else:
                 # Store fast IC for later use
                 c.metadata["fast_ic_series"] = ic_series
@@ -428,27 +446,31 @@ class ValidationPipeline:
                 if ic_abs >= self.config.replacement_ic_min:
                     # Store full correlation map for replacement check
                     corr_map = {
-                        fid: float(corrs[i])
-                        for i, fid in enumerate(self.library.factor_ids)
+                        fid: float(corrs[i]) for i, fid in enumerate(self.library.factor_ids)
                     }
                     c.metadata["max_correlation"] = max_corr
                     c.metadata["correlated_with"] = correlated_with
                     c.metadata["correlation_map"] = corr_map
                     replacement_candidates.append((c, corr_map))
                 else:
-                    failed.append((c, EvaluationResult(
-                        factor_name=c.name,
-                        formula=c.formula,
-                        ic_series=c.metadata.get("fast_ic_series"),
-                        ic_mean=ic_abs,
-                        max_correlation=max_corr,
-                        correlated_with=correlated_with,
-                        stage_passed=1,
-                        rejection_reason=(
-                            f"Stage 2: max|rho|={max_corr:.4f} >= {theta} "
-                            f"(with {correlated_with})"
-                        ),
-                    )))
+                    failed.append(
+                        (
+                            c,
+                            EvaluationResult(
+                                factor_name=c.name,
+                                formula=c.formula,
+                                ic_series=c.metadata.get("fast_ic_series"),
+                                ic_mean=ic_abs,
+                                max_correlation=max_corr,
+                                correlated_with=correlated_with,
+                                stage_passed=1,
+                                rejection_reason=(
+                                    f"Stage 2: max|rho|={max_corr:.4f} >= {theta} "
+                                    f"(with {correlated_with})"
+                                ),
+                            ),
+                        )
+                    )
 
         return passed, failed, replacement_candidates
 
@@ -533,18 +555,23 @@ class ValidationPipeline:
             for kept_idx in kept_indices:
                 if abs(corr_matrix[idx, kept_idx]) >= theta:
                     is_correlated = True
-                    removed.append((candidates[idx], EvaluationResult(
-                        factor_name=candidates[idx].name,
-                        formula=candidates[idx].formula,
-                        ic_mean=ic_vals[idx],
-                        max_correlation=float(abs(corr_matrix[idx, kept_idx])),
-                        correlated_with=candidates[kept_idx].name,
-                        stage_passed=2,
-                        rejection_reason=(
-                            f"Stage 3: intra-batch dup with {candidates[kept_idx].name} "
-                            f"(rho={corr_matrix[idx, kept_idx]:.4f})"
-                        ),
-                    )))
+                    removed.append(
+                        (
+                            candidates[idx],
+                            EvaluationResult(
+                                factor_name=candidates[idx].name,
+                                formula=candidates[idx].formula,
+                                ic_mean=ic_vals[idx],
+                                max_correlation=float(abs(corr_matrix[idx, kept_idx])),
+                                correlated_with=candidates[kept_idx].name,
+                                stage_passed=2,
+                                rejection_reason=(
+                                    f"Stage 3: intra-batch dup with {candidates[kept_idx].name} "
+                                    f"(rho={corr_matrix[idx, kept_idx]:.4f})"
+                                ),
+                            ),
+                        )
+                    )
                     break
             if not is_correlated:
                 kept_indices.add(idx)
@@ -663,8 +690,7 @@ class ValidationPipeline:
                             correlated_with=correlated_with,
                             stage_passed=3,
                             rejection_reason=(
-                                f"Stage 4: full |IC|={ic_abs_mean:.4f} "
-                                f"< {self.config.ic_threshold}"
+                                f"Stage 4: full |IC|={ic_abs_mean:.4f} < {self.config.ic_threshold}"
                             ),
                             admitted=False,
                         )
@@ -684,13 +710,18 @@ class ValidationPipeline:
 
                 except Exception as e:
                     logger.error("Worker failed for %s: %s", c.name, e)
-                    results.append((c, EvaluationResult(
-                        factor_name=c.name,
-                        formula=c.formula,
-                        stage_passed=3,
-                        rejection_reason=f"Stage 4 error: {e}",
-                        admitted=False,
-                    )))
+                    results.append(
+                        (
+                            c,
+                            EvaluationResult(
+                                factor_name=c.name,
+                                formula=c.formula,
+                                stage_passed=3,
+                                rejection_reason=f"Stage 4 error: {e}",
+                                admitted=False,
+                            ),
+                        )
+                    )
 
         return results
 
@@ -698,6 +729,7 @@ class ValidationPipeline:
 # ---------------------------------------------------------------------------
 # Convenience: Run the full pipeline
 # ---------------------------------------------------------------------------
+
 
 def run_evaluation_pipeline(
     candidates: list[CandidateFactor],

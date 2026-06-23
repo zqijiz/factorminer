@@ -22,6 +22,7 @@ def rng():
 # RegimeDetector: synthetic bull/bear phases
 # -----------------------------------------------------------------------
 
+
 def test_regime_detector_bull_bear_phases(rng):
     """Clear positive first half, negative second half should produce
     BULL and BEAR labels after the lookback window."""
@@ -32,8 +33,7 @@ def test_regime_detector_bull_bear_phases(rng):
     # Second half: strongly negative
     returns[:, 150:] = rng.normal(-0.02, 0.005, (M, 150))
 
-    cfg = RegimeConfig(lookback_window=30, bull_return_threshold=0.0,
-                       bear_return_threshold=0.0)
+    cfg = RegimeConfig(lookback_window=30, bull_return_threshold=0.0, bear_return_threshold=0.0)
     detector = RegimeDetector(config=cfg)
     result = detector.classify(returns)
 
@@ -57,14 +57,14 @@ def test_regime_detector_labels_shape(rng):
 # RegimeAwareEvaluator: signal works in all regimes
 # -----------------------------------------------------------------------
 
+
 def test_regime_evaluator_all_regimes_pass(rng):
     """A signal correlated with returns across all regimes should pass."""
     M, T = 20, 400
     returns = rng.normal(0, 0.01, (M, T))
     signal = returns * 5 + rng.normal(0, 0.001, (M, T))
 
-    cfg = RegimeConfig(lookback_window=20, min_regime_ic=0.01,
-                       min_regimes_passing=1)
+    cfg = RegimeConfig(lookback_window=20, min_regime_ic=0.01, min_regimes_passing=1)
     detector = RegimeDetector(config=cfg)
     regime = detector.classify(returns)
 
@@ -76,6 +76,7 @@ def test_regime_evaluator_all_regimes_pass(rng):
 # -----------------------------------------------------------------------
 # RegimeAwareEvaluator: signal only works in bull
 # -----------------------------------------------------------------------
+
 
 def test_regime_evaluator_bull_only_fails(rng):
     """A signal that only works in positive-return periods should fail
@@ -90,8 +91,7 @@ def test_regime_evaluator_bull_only_fails(rng):
     signal[:, :200] = returns[:, :200] * 5
     signal[:, 200:] = rng.normal(0, 1, (M, 200))  # noise in bear
 
-    cfg = RegimeConfig(lookback_window=20, min_regime_ic=0.03,
-                       min_regimes_passing=2)
+    cfg = RegimeConfig(lookback_window=20, min_regime_ic=0.03, min_regimes_passing=2)
     detector = RegimeDetector(config=cfg)
     regime = detector.classify(returns)
 
@@ -106,6 +106,7 @@ def test_regime_evaluator_bull_only_fails(rng):
 # -----------------------------------------------------------------------
 # Edge case: very short data
 # -----------------------------------------------------------------------
+
 
 def test_regime_detector_short_data(rng):
     """Data shorter than lookback_window should still work (all SIDEWAYS)."""

@@ -50,6 +50,7 @@ logger = logging.getLogger(__name__)
 # Default knowledge base from the paper
 # ---------------------------------------------------------------------------
 
+
 def _default_success_patterns() -> list[SuccessPattern]:
     """Initial success patterns from FactorMiner Table 4."""
     return [
@@ -218,7 +219,7 @@ def _default_insights() -> list[StrategicInsight]:
         StrategicInsight(
             insight="Combining operators from different categories produces more diverse factors",
             evidence="Multi-category composition (e.g., Statistical + Logical + CrossSectional) "
-                     "reduces correlation with existing library members",
+            "reduces correlation with existing library members",
             batch_source=0,
         ),
     ]
@@ -227,6 +228,7 @@ def _default_insights() -> list[StrategicInsight]:
 # ---------------------------------------------------------------------------
 # Manager class
 # ---------------------------------------------------------------------------
+
 
 class ExperienceMemoryManager:
     """High-level manager for the experience memory system.
@@ -373,7 +375,9 @@ class ExperienceMemoryManager:
             forbidden_directions, insights, library_state, prompt_text.
         """
         # Use enhanced retrieval if KG or embedder is available
-        if (self.kg is not None or self.embedder is not None) and retrieve_memory_enhanced is not None:
+        if (
+            self.kg is not None or self.embedder is not None
+        ) and retrieve_memory_enhanced is not None:
             return retrieve_memory_enhanced(
                 self.memory,
                 library_state=library_state,
@@ -450,9 +454,7 @@ class ExperienceMemoryManager:
             self.max_failure_patterns = config.get(
                 "max_failure_patterns", self.max_failure_patterns
             )
-            self.max_insights = config.get(
-                "max_insights", self.max_insights
-            )
+            self.max_insights = config.get("max_insights", self.max_insights)
 
         # Phase 2: Load knowledge graph if available
         kg_path = path.with_name(f"{path.stem}_kg.json")
@@ -482,9 +484,7 @@ class ExperienceMemoryManager:
         recent_logs = self.memory.state.admission_log[-5:]
         avg_rate = 0.0
         if recent_logs:
-            avg_rate = sum(
-                log.get("admission_rate", 0) for log in recent_logs
-            ) / len(recent_logs)
+            avg_rate = sum(log.get("admission_rate", 0) for log in recent_logs) / len(recent_logs)
 
         stats: dict[str, Any] = {
             "version": self.memory.version,

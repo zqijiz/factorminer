@@ -17,6 +17,7 @@ def canon():
 # Double negation: Neg(Neg($close)) == $close
 # -----------------------------------------------------------------------
 
+
 def test_double_negation(canon):
     tree_a = parse("Neg(Neg($close))")
     tree_b = parse("$close")
@@ -26,6 +27,7 @@ def test_double_negation(canon):
 # -----------------------------------------------------------------------
 # Commutativity: Add($close, $open) == Add($open, $close)
 # -----------------------------------------------------------------------
+
 
 def test_commutativity_add(canon):
     tree_a = parse("Add($close, $open)")
@@ -37,6 +39,7 @@ def test_commutativity_add(canon):
 # Non-algebraic preserved: CsRank(Neg($close)) != Neg(CsRank($close))
 # -----------------------------------------------------------------------
 
+
 def test_non_algebraic_not_simplified(canon):
     tree_a = parse("CsRank(Neg($close))")
     tree_b = parse("Neg(CsRank($close))")
@@ -46,6 +49,7 @@ def test_non_algebraic_not_simplified(canon):
 # -----------------------------------------------------------------------
 # is_duplicate method
 # -----------------------------------------------------------------------
+
 
 def test_is_duplicate_same_formula(canon):
     tree = parse("CsRank($close)")
@@ -61,6 +65,7 @@ def test_is_duplicate_different_formulas(canon):
 # -----------------------------------------------------------------------
 # Cache: second call should be faster (or at least not slower)
 # -----------------------------------------------------------------------
+
 
 def test_cache_works(canon):
     tree = parse("Add(Mul($close, $open), Neg($volume))")

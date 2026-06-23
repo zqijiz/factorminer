@@ -18,6 +18,7 @@ except ImportError:
 # NumPy implementations
 # ===========================================================================
 
+
 def cs_rank_np(x: np.ndarray) -> np.ndarray:
     """Cross-sectional percentile rank -- key GPU target (26x speedup).
 
@@ -80,6 +81,7 @@ def cs_quantile_np(x: np.ndarray, n_bins: int = 5) -> np.ndarray:
 # ===========================================================================
 # PyTorch implementations
 # ===========================================================================
+
 
 def cs_rank_torch(x: torch.Tensor) -> torch.Tensor:
     """Cross-sectional percentile rank -- fully vectorized for GPU."""

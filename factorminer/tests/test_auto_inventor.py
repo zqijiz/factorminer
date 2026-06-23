@@ -14,6 +14,7 @@ from factorminer.operators.custom import CustomOperatorStore
 # _compile_safely: valid numpy code -> callable
 # -----------------------------------------------------------------------
 
+
 def test_compile_safely_valid_code():
     """Valid numpy code defining compute() should return a callable."""
     code = "def compute(x):\n    return np.nanmean(x, axis=1, keepdims=True) * np.ones_like(x)"
@@ -36,6 +37,7 @@ def test_compile_safely_valid_code():
 # _compile_safely: os.system -> returns None (SECURITY)
 # -----------------------------------------------------------------------
 
+
 def test_compile_safely_blocks_os_system():
     """Code containing os.system should be blocked."""
     code = "import os\ndef compute(x):\n    os.system('echo hacked')\n    return x"
@@ -47,6 +49,7 @@ def test_compile_safely_blocks_os_system():
 # -----------------------------------------------------------------------
 # _compile_safely: import os -> returns None (SECURITY)
 # -----------------------------------------------------------------------
+
 
 def test_compile_safely_blocks_import_os():
     """Code with 'import ' token should be blocked."""
@@ -68,10 +71,12 @@ def test_compile_safely_blocks_eval():
 # CustomOperatorStore: register and list
 # -----------------------------------------------------------------------
 
+
 def test_custom_operator_store_register_and_list(tmp_path):
     store = CustomOperatorStore(store_dir=str(tmp_path / "ops"))
 
     from factorminer.core.types import OperatorSpec, OperatorType, SignatureType
+
     spec = OperatorSpec(
         name="TestOp",
         arity=1,
@@ -80,6 +85,7 @@ def test_custom_operator_store_register_and_list(tmp_path):
         description="test operator",
     )
     from factorminer.operators.custom import CustomOperator
+
     op = CustomOperator(
         name="TestOp",
         spec=spec,
@@ -95,6 +101,7 @@ def test_custom_operator_store_register_and_list(tmp_path):
 # -----------------------------------------------------------------------
 # ProposedOperator dataclass
 # -----------------------------------------------------------------------
+
 
 def test_proposed_operator_dataclass():
     op = ProposedOperator(
@@ -113,8 +120,10 @@ def test_proposed_operator_dataclass():
 # Helpers
 # -----------------------------------------------------------------------
 
+
 def _mock_provider():
     from factorminer.agent.llm_interface import MockProvider
+
     return MockProvider()
 
 

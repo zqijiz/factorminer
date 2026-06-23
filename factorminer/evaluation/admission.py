@@ -138,8 +138,7 @@ def check_replacement(
 
     # Find all factors above the correlation threshold
     conflicting: list[str] = [
-        fid for fid, corr in correlation_map.items()
-        if abs(corr) >= correlation_threshold
+        fid for fid, corr in correlation_map.items() if abs(corr) >= correlation_threshold
     ]
 
     # Must conflict with exactly one factor
@@ -182,6 +181,7 @@ def check_replacement(
 # ---------------------------------------------------------------------------
 # Stock-level thresholds (configurable)
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class StockThresholds:

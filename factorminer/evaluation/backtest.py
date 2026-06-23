@@ -15,9 +15,11 @@ from scipy.stats import spearmanr
 # Time-series splitting
 # ------------------------------------------------------------------
 
+
 @dataclass
 class SplitWindow:
     """Indices for a single train/test split."""
+
     train_start: int
     train_end: int
     test_start: int
@@ -76,12 +78,14 @@ def rolling_splits(
     splits: list[SplitWindow] = []
     start = 0
     while start + train_window + test_window <= T:
-        splits.append(SplitWindow(
-            train_start=start,
-            train_end=start + train_window,
-            test_start=start + train_window,
-            test_end=start + train_window + test_window,
-        ))
+        splits.append(
+            SplitWindow(
+                train_start=start,
+                train_end=start + train_window,
+                test_start=start + train_window,
+                test_end=start + train_window + test_window,
+            )
+        )
         start += step
     return splits
 
@@ -89,6 +93,7 @@ def rolling_splits(
 # ------------------------------------------------------------------
 # IC computation
 # ------------------------------------------------------------------
+
 
 def compute_ic_series(
     signal: np.ndarray,
@@ -145,7 +150,7 @@ def compute_rolling_ic(
     T = len(ic_series)
     rolling_ic = np.full(T, np.nan)
     for t in range(window - 1, T):
-        window_ics = ic_series[t - window + 1: t + 1]
+        window_ics = ic_series[t - window + 1 : t + 1]
         finite = window_ics[np.isfinite(window_ics)]
         if len(finite) >= 1:
             rolling_ic[t] = float(np.mean(finite))
@@ -219,6 +224,7 @@ def compute_ic_stats(ic_series: np.ndarray) -> dict:
 # Factor return attribution
 # ------------------------------------------------------------------
 
+
 def factor_return_attribution(
     factor_signals: dict[int, np.ndarray],
     returns: np.ndarray,
@@ -271,9 +277,11 @@ def factor_return_attribution(
 # Drawdown analysis
 # ------------------------------------------------------------------
 
+
 @dataclass
 class DrawdownResult:
     """Results of drawdown analysis."""
+
     max_drawdown: float
     max_drawdown_start: int
     max_drawdown_end: int
@@ -304,7 +312,7 @@ def compute_drawdown(cumulative_returns: np.ndarray) -> DrawdownResult:
     max_dd_idx = np.argmin(drawdown_series)
     max_dd = float(drawdown_series[max_dd_idx])
     # Find the peak before the max drawdown
-    peak_idx = int(np.argmax(cumulative_returns[:max_dd_idx + 1]))
+    peak_idx = int(np.argmax(cumulative_returns[: max_dd_idx + 1]))
 
     # Identify recovery periods (peak -> trough -> recovery)
     recovery_periods: list[tuple[int, int, int]] = []

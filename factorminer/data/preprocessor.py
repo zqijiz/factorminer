@@ -50,14 +50,24 @@ class PreprocessConfig:
     cross_fill_method: str = "median"
     standardise: bool = True
     halt_volume_threshold: float = 0.0
-    features_to_standardise: list[str] = field(default_factory=lambda: [
-        "open", "high", "low", "close", "volume", "amount", "vwap", "returns",
-    ])
+    features_to_standardise: list[str] = field(
+        default_factory=lambda: [
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+            "amount",
+            "vwap",
+            "returns",
+        ]
+    )
 
 
 # ---------------------------------------------------------------------------
 # Derived features
 # ---------------------------------------------------------------------------
+
 
 def compute_vwap(df: pd.DataFrame) -> pd.DataFrame:
     """Add ``vwap`` column: amount / volume.  NaN when volume is zero."""
@@ -93,6 +103,7 @@ def compute_derived_features(df: pd.DataFrame) -> pd.DataFrame:
 # Trading halt handling
 # ---------------------------------------------------------------------------
 
+
 def flag_halts(
     df: pd.DataFrame,
     volume_threshold: float = 0.0,
@@ -105,11 +116,7 @@ def flag_halts(
     """
     df = df.copy()
     zero_volume = df["volume"] <= volume_threshold
-    flat_price = (
-        (df["open"] == df["high"])
-        & (df["high"] == df["low"])
-        & (df["low"] == df["close"])
-    )
+    flat_price = (df["open"] == df["high"]) & (df["high"] == df["low"]) & (df["low"] == df["close"])
     df["is_halt"] = zero_volume & flat_price
     n_halt = df["is_halt"].sum()
     if n_halt > 0:
@@ -124,7 +131,8 @@ def mask_halts(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     mask = df["is_halt"]
     cols_to_nan = [
-        c for c in ["open", "high", "low", "close", "volume", "amount", "vwap", "returns"]
+        c
+        for c in ["open", "high", "low", "close", "volume", "amount", "vwap", "returns"]
         if c in df.columns
     ]
     df.loc[mask, cols_to_nan] = np.nan
@@ -134,6 +142,7 @@ def mask_halts(df: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # Missing data handling
 # ---------------------------------------------------------------------------
+
 
 def _extract_date(dt_series: pd.Series) -> pd.Series:
     """Return the date component of a datetime series."""
@@ -197,6 +206,7 @@ def fill_missing(
 # Winsorisation
 # ---------------------------------------------------------------------------
 
+
 def winsorise(
     df: pd.DataFrame,
     columns: Sequence[str],
@@ -233,6 +243,7 @@ def winsorise(
 # Cross-sectional standardisation
 # ---------------------------------------------------------------------------
 
+
 def cross_sectional_standardise(
     df: pd.DataFrame,
     columns: Sequence[str],
@@ -258,6 +269,7 @@ def cross_sectional_standardise(
 # ---------------------------------------------------------------------------
 # Quality checks
 # ---------------------------------------------------------------------------
+
 
 def quality_check(
     df: pd.DataFrame,
@@ -309,6 +321,7 @@ def quality_check(
 # ---------------------------------------------------------------------------
 # Full pipeline
 # ---------------------------------------------------------------------------
+
 
 def preprocess(
     df: pd.DataFrame,

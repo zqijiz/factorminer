@@ -355,7 +355,9 @@ def _build_walk_forward_contract(
     )
 
 
-def _build_stress_contract(cfg, runtime_manifest: dict[str, Any] | None = None) -> StressBenchmarkContract:
+def _build_stress_contract(
+    cfg, runtime_manifest: dict[str, Any] | None = None
+) -> StressBenchmarkContract:
     """Build the canonical cost/capacity stress contract."""
     runtime_manifest = dict(runtime_manifest or {})
     cost_bps = runtime_manifest.get("cost_bps", getattr(cfg.benchmark, "cost_bps", [1.0]))
@@ -428,7 +430,9 @@ def _build_strategy_grid_contract(
             else None
         ),
         selected_backend=(
-            str(runtime_manifest["backend"]) if runtime_manifest.get("backend") is not None else None
+            str(runtime_manifest["backend"])
+            if runtime_manifest.get("backend") is not None
+            else None
         ),
     )
 
@@ -1414,6 +1418,7 @@ def _runtime_strategy_backends(
     try:
         from factorminer.operators import torch_available
     except Exception:  # pragma: no cover - optional dependency
+
         def torch_available() -> bool:
             return False
 
@@ -1726,7 +1731,9 @@ def run_ablation_strategy_benchmark(
         for dependence_metric in dependence_metrics:
             for backend in backends:
                 combo_name = f"{memory_policy}__{dependence_metric}__{backend}"
-                combo_output_dir = output_dir / "benchmark" / "ablation" / "strategy_grid" / combo_name
+                combo_output_dir = (
+                    output_dir / "benchmark" / "ablation" / "strategy_grid" / combo_name
+                )
                 combo_manifest = {
                     **base_runtime_manifest,
                     "memory_policy": memory_policy,

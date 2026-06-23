@@ -17,6 +17,7 @@ def rng():
 # CausalConfig defaults
 # -----------------------------------------------------------------------
 
+
 def test_causal_config_defaults():
     cfg = CausalConfig()
     assert cfg.enabled is True
@@ -29,6 +30,7 @@ def test_causal_config_defaults():
 # -----------------------------------------------------------------------
 # CausalTestResult dataclass
 # -----------------------------------------------------------------------
+
 
 def test_causal_test_result_fields():
     r = CausalTestResult(
@@ -49,6 +51,7 @@ def test_causal_test_result_fields():
 # -----------------------------------------------------------------------
 # Granger test: planted causal signal should pass
 # -----------------------------------------------------------------------
+
 
 def test_granger_causal_signal_passes(rng):
     """A signal that IS lag-1 predictive of returns should produce low p."""
@@ -74,6 +77,7 @@ def test_granger_causal_signal_passes(rng):
 # Granger test: random noise should fail (high p-value)
 # -----------------------------------------------------------------------
 
+
 def test_granger_random_noise_high_pvalue(rng):
     """Pure noise signal should have high p-value."""
     M, T = 20, 200
@@ -96,6 +100,7 @@ def test_granger_random_noise_high_pvalue(rng):
 # -----------------------------------------------------------------------
 # Intervention robustness: robust signal retains IC
 # -----------------------------------------------------------------------
+
 
 def test_intervention_robust_signal(rng):
     """A signal strongly correlated with returns should be robust."""

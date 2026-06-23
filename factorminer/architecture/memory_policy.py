@@ -294,8 +294,7 @@ class RegimeAwareMemoryPolicy(PaperMemoryPolicy):
 
     def _bias_score(self, pattern: dict[str, Any], regime: MarketRegime) -> float:
         text = " ".join(
-            str(pattern.get(key, "")).lower()
-            for key in ("name", "description", "template")
+            str(pattern.get(key, "")).lower() for key in ("name", "description", "template")
         )
         keywords = self._REGIME_KEYWORDS.get(regime, ())
         return float(sum(1.0 for keyword in keywords if keyword in text))
@@ -477,18 +476,18 @@ def build_memory_policy(
     """Construct the configured memory policy from flat or hierarchical config."""
 
     memory_cfg = getattr(config, "memory", None)
-    policy_name = str(
-        getattr(memory_cfg, "policy", getattr(config, "memory_policy", "paper"))
-    ).strip().lower()
+    policy_name = (
+        str(getattr(memory_cfg, "policy", getattr(config, "memory_policy", "paper")))
+        .strip()
+        .lower()
+    )
     max_success_patterns = int(
         getattr(memory_cfg, "max_success_patterns", getattr(config, "max_success_patterns", 50))
     )
     max_failure_patterns = int(
         getattr(memory_cfg, "max_failure_patterns", getattr(config, "max_failure_patterns", 100))
     )
-    max_insights = int(
-        getattr(memory_cfg, "max_insights", getattr(config, "max_insights", 30))
-    )
+    max_insights = int(getattr(memory_cfg, "max_insights", getattr(config, "max_insights", 30)))
     regime_lookback_window = int(
         getattr(
             memory_cfg,

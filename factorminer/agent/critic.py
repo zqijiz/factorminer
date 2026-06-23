@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 # CriticScore dataclass -- multi-dimensional
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class CriticScore:
     """Multi-dimensional scored review of a single candidate factor.
@@ -64,14 +65,16 @@ class CriticScore:
     factor_name: str
     formula: str
     source_specialist: str
-    scores: dict[str, float] = field(default_factory=lambda: {
-        "novelty": 0.5,
-        "economic_intuition": 0.5,
-        "complexity_penalty": 0.5,
-        "operator_diversity": 0.5,
-        "pattern_alignment": 0.5,
-        "regime_appropriateness": 0.5,
-    })
+    scores: dict[str, float] = field(
+        default_factory=lambda: {
+            "novelty": 0.5,
+            "economic_intuition": 0.5,
+            "complexity_penalty": 0.5,
+            "operator_diversity": 0.5,
+            "pattern_alignment": 0.5,
+            "regime_appropriateness": 0.5,
+        }
+    )
     composite_score: float = 0.5
     keep: bool = True
     critique: str = ""
@@ -126,28 +129,63 @@ _LLM_SCORING_TOP_K = 40
 
 # Operator categories for diversity measurement
 _OP_CATEGORIES: dict[str, str] = {
-    "Add": "arithmetic", "Sub": "arithmetic", "Mul": "arithmetic",
-    "Div": "arithmetic", "Neg": "arithmetic", "Abs": "arithmetic",
-    "Square": "arithmetic", "Sqrt": "arithmetic", "Log": "arithmetic",
-    "Pow": "arithmetic", "Sign": "arithmetic",
-    "Std": "statistical", "Var": "statistical", "Mean": "statistical",
-    "Sum": "statistical", "Skew": "statistical", "Kurt": "statistical",
-    "Median": "statistical", "Quantile": "statistical", "Max": "statistical",
+    "Add": "arithmetic",
+    "Sub": "arithmetic",
+    "Mul": "arithmetic",
+    "Div": "arithmetic",
+    "Neg": "arithmetic",
+    "Abs": "arithmetic",
+    "Square": "arithmetic",
+    "Sqrt": "arithmetic",
+    "Log": "arithmetic",
+    "Pow": "arithmetic",
+    "Sign": "arithmetic",
+    "Std": "statistical",
+    "Var": "statistical",
+    "Mean": "statistical",
+    "Sum": "statistical",
+    "Skew": "statistical",
+    "Kurt": "statistical",
+    "Median": "statistical",
+    "Quantile": "statistical",
+    "Max": "statistical",
     "Min": "statistical",
-    "Delta": "timeseries", "Delay": "timeseries", "TsRank": "timeseries",
-    "TsMax": "timeseries", "TsMin": "timeseries", "TsArgMax": "timeseries",
-    "TsArgMin": "timeseries", "TsLinRegSlope": "timeseries",
-    "Return": "timeseries", "LogReturn": "timeseries", "CumSum": "timeseries",
-    "EMA": "smoothing", "SMA": "smoothing", "WMA": "smoothing",
-    "HMA": "smoothing", "DEMA": "smoothing", "KAMA": "smoothing",
+    "Delta": "timeseries",
+    "Delay": "timeseries",
+    "TsRank": "timeseries",
+    "TsMax": "timeseries",
+    "TsMin": "timeseries",
+    "TsArgMax": "timeseries",
+    "TsArgMin": "timeseries",
+    "TsLinRegSlope": "timeseries",
+    "Return": "timeseries",
+    "LogReturn": "timeseries",
+    "CumSum": "timeseries",
+    "EMA": "smoothing",
+    "SMA": "smoothing",
+    "WMA": "smoothing",
+    "HMA": "smoothing",
+    "DEMA": "smoothing",
+    "KAMA": "smoothing",
     "Decay": "smoothing",
-    "CsRank": "cross_sectional", "CsZScore": "cross_sectional",
-    "CsDemean": "cross_sectional", "CsScale": "cross_sectional",
-    "CsNeutralize": "cross_sectional", "CsQuantile": "cross_sectional",
-    "Corr": "regression", "Cov": "regression", "Beta": "regression",
-    "Resi": "regression", "Rsquare": "regression", "Resid": "regression",
-    "IfElse": "logical", "Greater": "logical", "Less": "logical",
-    "GreaterEqual": "logical", "LessEqual": "logical", "Equal": "logical",
+    "CsRank": "cross_sectional",
+    "CsZScore": "cross_sectional",
+    "CsDemean": "cross_sectional",
+    "CsScale": "cross_sectional",
+    "CsNeutralize": "cross_sectional",
+    "CsQuantile": "cross_sectional",
+    "Corr": "regression",
+    "Cov": "regression",
+    "Beta": "regression",
+    "Resi": "regression",
+    "Rsquare": "regression",
+    "Resid": "regression",
+    "IfElse": "logical",
+    "Greater": "logical",
+    "Less": "logical",
+    "GreaterEqual": "logical",
+    "LessEqual": "logical",
+    "Equal": "logical",
 }
 
 _OPERATOR_PATTERN = re.compile(r"([A-Z][a-zA-Z0-9]*)\s*\(")
@@ -223,7 +261,7 @@ def _token_idf_similarity(formula: str, existing: list[str]) -> float:
     for tok in query_tokens:
         if tok in df:
             idf = math.log(n_docs / df[tok]) if df[tok] < n_docs else 0.0
-            score += (1.0 + idf)
+            score += 1.0 + idf
 
     max_score = sum(1.0 for _ in query_tokens)
     if max_score == 0:
@@ -234,6 +272,7 @@ def _token_idf_similarity(formula: str, existing: list[str]) -> float:
 # ---------------------------------------------------------------------------
 # CriticAgent
 # ---------------------------------------------------------------------------
+
 
 class CriticAgent:
     """LLM-powered multi-dimensional critic for candidate factor pre-filtering.
@@ -316,6 +355,7 @@ class CriticAgent:
         specialist_map = specialist_map or {}
 
         from factorminer.agent.output_parser import _try_build_candidate
+
         cf_list: list[CandidateFactor] = []
         for i, formula in enumerate(candidates):
             cf = _try_build_candidate(f"candidate_{i}", formula)
@@ -413,19 +453,21 @@ class CriticAgent:
             composite = self._compute_composite(scores_dict)
             critique = self._brief_heuristic_critique(scores_dict, candidate.formula)
 
-            partial_scores.append(CriticScore(
-                factor_name=candidate.name,
-                formula=candidate.formula,
-                source_specialist=spec_name,
-                scores=scores_dict,
-                composite_score=composite,
-                keep=True,
-                critique=critique,
-            ))
+            partial_scores.append(
+                CriticScore(
+                    factor_name=candidate.name,
+                    formula=candidate.formula,
+                    source_specialist=spec_name,
+                    scores=scores_dict,
+                    composite_score=composite,
+                    keep=True,
+                    critique=critique,
+                )
+            )
 
         # Phase 2: LLM economic intuition for top candidates
         partial_scores.sort(key=lambda s: s.composite_score, reverse=True)
-        top_for_llm = partial_scores[:self.llm_scoring_top_k]
+        top_for_llm = partial_scores[: self.llm_scoring_top_k]
 
         llm_econ_scores = self._llm_economic_intuition(
             candidates=top_for_llm,
@@ -530,8 +572,25 @@ class CriticAgent:
         formula_tokens = set(re.findall(r"[a-z]+", formula_lower))
         signal_tokens = set(re.findall(r"[a-z]+", signal_lower))
 
-        stopwords = {"the", "a", "is", "in", "of", "to", "and", "or", "for",
-                     "as", "by", "on", "it", "be", "at", "an", "up"}
+        stopwords = {
+            "the",
+            "a",
+            "is",
+            "in",
+            "of",
+            "to",
+            "and",
+            "or",
+            "for",
+            "as",
+            "by",
+            "on",
+            "it",
+            "be",
+            "at",
+            "an",
+            "up",
+        }
         formula_tokens -= stopwords
         signal_tokens -= stopwords
 
@@ -542,9 +601,7 @@ class CriticAgent:
         alignment = len(overlap) / len(formula_tokens)
         return float(0.3 + 0.7 * min(1.0, alignment * 2))
 
-    def _score_regime_appropriateness(
-        self, formula: str, regime_context: str
-    ) -> float:
+    def _score_regime_appropriateness(self, formula: str, regime_context: str) -> float:
         """Does this formula suit the stated regime context?"""
         if not regime_context:
             return 0.7
@@ -602,9 +659,7 @@ class CriticAgent:
             return 0.5
         return float(total / weight_sum)
 
-    def _brief_heuristic_critique(
-        self, scores: dict[str, float], formula: str
-    ) -> str:
+    def _brief_heuristic_critique(self, scores: dict[str, float], formula: str) -> str:
         """Generate a brief human-readable critique from heuristic scores."""
         parts = []
         depth = _formula_depth(formula)
@@ -666,8 +721,7 @@ class CriticAgent:
             return self._parse_llm_scoring_response(raw, candidates)
         except Exception as exc:
             logger.warning(
-                "Critic LLM economic intuition scoring failed: %s. "
-                "Keeping heuristic scores.",
+                "Critic LLM economic intuition scoring failed: %s. Keeping heuristic scores.",
                 exc,
             )
             return {}
@@ -750,9 +804,7 @@ class CriticAgent:
     # Diversity adjustment
     # ------------------------------------------------------------------
 
-    def _apply_diversity_adjustment(
-        self, scores: list[CriticScore]
-    ) -> list[CriticScore]:
+    def _apply_diversity_adjustment(self, scores: list[CriticScore]) -> list[CriticScore]:
         """Slightly boost underrepresented specialists to maintain balance."""
         if not scores:
             return scores
@@ -768,24 +820,22 @@ class CriticAgent:
             actual_frac = specialist_counts[cs.source_specialist] / total_so_far
             diversity_adj = (ideal_frac - actual_frac) * 0.1
             diversity_adj = max(-0.05, min(0.05, diversity_adj))
-            adjusted_score = float(
-                max(0.0, min(1.0, cs.composite_score + diversity_adj))
-            )
+            adjusted_score = float(max(0.0, min(1.0, cs.composite_score + diversity_adj)))
             new_scores = dict(cs.scores)
             new_scores["operator_diversity"] = float(
-                max(0.0, min(1.0,
-                    cs.scores.get("operator_diversity", 0.5) + diversity_adj
-                ))
+                max(0.0, min(1.0, cs.scores.get("operator_diversity", 0.5) + diversity_adj))
             )
-            adjusted.append(CriticScore(
-                factor_name=cs.factor_name,
-                formula=cs.formula,
-                source_specialist=cs.source_specialist,
-                scores=new_scores,
-                composite_score=adjusted_score,
-                keep=cs.keep,
-                critique=cs.critique,
-            ))
+            adjusted.append(
+                CriticScore(
+                    factor_name=cs.factor_name,
+                    formula=cs.formula,
+                    source_specialist=cs.source_specialist,
+                    scores=new_scores,
+                    composite_score=adjusted_score,
+                    keep=cs.keep,
+                    critique=cs.critique,
+                )
+            )
 
         adjusted.sort(key=lambda s: s.composite_score, reverse=True)
         return adjusted
@@ -799,8 +849,10 @@ class CriticAgent:
         """Flatten a memory signal dict to a compact string for embedding."""
         parts: list[str] = []
         for key in (
-            "recommended_directions", "strategic_insights",
-            "complementary_patterns", "prompt_text",
+            "recommended_directions",
+            "strategic_insights",
+            "complementary_patterns",
+            "prompt_text",
         ):
             val = memory_signal.get(key)
             if isinstance(val, list):
@@ -818,20 +870,22 @@ class CriticAgent:
         scores: list[CriticScore] = []
         for specialist_name, candidates in proposals.items():
             for c in candidates:
-                scores.append(CriticScore(
-                    factor_name=c.name,
-                    formula=c.formula,
-                    source_specialist=specialist_name,
-                    scores={
-                        "novelty": 0.5,
-                        "economic_intuition": 0.5,
-                        "complexity_penalty": 0.5,
-                        "operator_diversity": 0.5,
-                        "pattern_alignment": 0.5,
-                        "regime_appropriateness": 0.5,
-                    },
-                    composite_score=default_composite,
-                    keep=True,
-                    critique="Fallback uniform score (critic unavailable).",
-                ))
+                scores.append(
+                    CriticScore(
+                        factor_name=c.name,
+                        formula=c.formula,
+                        source_specialist=specialist_name,
+                        scores={
+                            "novelty": 0.5,
+                            "economic_intuition": 0.5,
+                            "complexity_penalty": 0.5,
+                            "operator_diversity": 0.5,
+                            "pattern_alignment": 0.5,
+                            "regime_appropriateness": 0.5,
+                        },
+                        composite_score=default_composite,
+                        keep=True,
+                        critique="Fallback uniform score (critic unavailable).",
+                    )
+                )
         return scores

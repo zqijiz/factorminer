@@ -32,6 +32,7 @@ def market_data(rng):
 # MarketImpactModel: higher capital -> higher impact_bps
 # -----------------------------------------------------------------------
 
+
 def test_impact_increases_with_capital(rng):
     """Higher capital should result in higher average impact."""
     M, T = 20, 100
@@ -62,6 +63,7 @@ def test_impact_result_shape(market_data):
 # CapacityEstimator: low capital -> net_icir ~ gross_icir
 # -----------------------------------------------------------------------
 
+
 def test_low_capital_minimal_degradation(market_data):
     """At very low capital, net ICIR should be close to gross ICIR."""
     returns, volume, signals = market_data
@@ -80,6 +82,7 @@ def test_low_capital_minimal_degradation(market_data):
 # -----------------------------------------------------------------------
 # CapacityEstimator: high capital -> significant IC degradation
 # -----------------------------------------------------------------------
+
 
 def test_high_capital_degrades_ic(market_data):
     """At very high capital, the net ICIR should be meaningfully lower."""
@@ -101,6 +104,7 @@ def test_high_capital_degrades_ic(market_data):
 # -----------------------------------------------------------------------
 # Edge case: zero volume
 # -----------------------------------------------------------------------
+
 
 def test_zero_volume_handling(rng):
     """Zero volume should be handled gracefully (participation_limit used)."""

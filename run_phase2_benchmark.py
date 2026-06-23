@@ -57,6 +57,7 @@ sys.path.insert(0, str(_REPO_ROOT))
 def _load_module_direct(module_name: str, file_path: Path):
     """Load a Python module directly from a file path, bypassing package init."""
     import importlib.util
+
     spec = importlib.util.spec_from_file_location(module_name, str(file_path))
     mod = importlib.util.module_from_spec(spec)
     # Register in sys.modules so lazy imports inside the module work
@@ -69,53 +70,73 @@ def _load_module_direct(module_name: str, file_path: Path):
 # CLI parsing
 # ---------------------------------------------------------------------------
 
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="HelixFactor Phase 2 Comprehensive Benchmark",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        "--mock", action="store_true",
+        "--mock",
+        action="store_true",
         help="Use synthetic mock data (no API keys needed)",
     )
     parser.add_argument(
-        "--data", type=str, default=None,
+        "--data",
+        type=str,
+        default=None,
         help="Path to real market data CSV",
     )
     parser.add_argument(
-        "--n-factors", type=int, default=40,
+        "--n-factors",
+        type=int,
+        default=40,
         help="Target library size per method",
     )
     parser.add_argument(
-        "--n-assets", type=int, default=100,
+        "--n-assets",
+        type=int,
+        default=100,
         help="Number of assets in mock data",
     )
     parser.add_argument(
-        "--n-periods", type=int, default=600,
+        "--n-periods",
+        type=int,
+        default=600,
         help="Number of time periods in mock data",
     )
     parser.add_argument(
-        "--output", type=str, default="results/phase2_benchmark",
+        "--output",
+        type=str,
+        default="results/phase2_benchmark",
         help="Output directory for results",
     )
     parser.add_argument(
-        "--seed", type=int, default=42,
+        "--seed",
+        type=int,
+        default=42,
         help="Random seed for reproducibility",
     )
     parser.add_argument(
-        "--methods", nargs="*", default=None,
+        "--methods",
+        nargs="*",
+        default=None,
         help="Methods to benchmark (default: all 5)",
     )
     parser.add_argument(
-        "--full-ablation", action="store_true",
+        "--full-ablation",
+        action="store_true",
         help="Run full ablation study (slower)",
     )
     parser.add_argument(
-        "--skip-ablation", action="store_true",
+        "--skip-ablation",
+        action="store_true",
         help="Skip ablation study entirely",
     )
     parser.add_argument(
-        "--log-level", type=str, default="WARNING",
+        "--log-level",
+        type=str,
+        default="WARNING",
         help="Logging level",
     )
     return parser.parse_args()
@@ -124,6 +145,7 @@ def _parse_args() -> argparse.Namespace:
 # ---------------------------------------------------------------------------
 # Formatting helpers
 # ---------------------------------------------------------------------------
+
 
 def _section(title: str) -> None:
     bar = "=" * 70
@@ -217,9 +239,7 @@ def _build_phase2_manifest(
     ablation_configs: list[str] | None = None,
     runtime_manifest_root: Path | None = None,
 ) -> dict[str, Any]:
-    runtime_refs = _collect_runtime_manifest_refs(
-        runtime_manifest_root or output_dir
-    )
+    runtime_refs = _collect_runtime_manifest_refs(runtime_manifest_root or output_dir)
     return {
         "benchmark_name": "phase2",
         "output_dir": str(output_dir),
@@ -329,7 +349,7 @@ def _print_improvement_table(bench_result) -> None:
         return f"+{(h - r) / r * 100:.1f}%"
 
     print(f"\n  {'Metric':<28} {'FactorMiner':>12} {'HelixFactor':>12} {'Improvement':>12}")
-    print(f"  {'-'*28} {'-'*12} {'-'*12} {'-'*12}")
+    print(f"  {'-' * 28} {'-' * 12} {'-' * 12} {'-' * 12}")
     metrics = [
         ("Library IC (%)", r_ic, h_ic),
         ("Library ICIR", r_icir, h_icir),
@@ -339,9 +359,7 @@ def _print_improvement_table(bench_result) -> None:
         ("XGBoost Sel IC (%)", r_xgb, h_xgb),
     ]
     for name, r_val, h_val in metrics:
-        print(
-            f"  {name:<28} {r_val:>12.4f} {h_val:>12.4f} {_delta(h_val, r_val):>12}"
-        )
+        print(f"  {name:<28} {r_val:>12.4f} {h_val:>12.4f} {_delta(h_val, r_val):>12}")
 
 
 def _fmt_stat(v, fmt=".4f") -> str:
@@ -394,8 +412,10 @@ def _print_stat_tests(stat_tests: dict) -> None:
     lo = boot.get("lower", 0.0)
     hi = boot.get("upper", 0.0)
     print("  Block-bootstrap 95% CI on IC difference:")
-    print(f"    [{_fmt_stat(lo)}, {_fmt_stat(hi)}]  "
-          f"{'(excludes zero **)' if boot.get('excludes_zero') else ''}")
+    print(
+        f"    [{_fmt_stat(lo)}, {_fmt_stat(hi)}]  "
+        f"{'(excludes zero **)' if boot.get('excludes_zero') else ''}"
+    )
     print()
 
     wil_p = wil.get("p_value", float("nan"))
@@ -411,7 +431,9 @@ def _print_stat_tests(stat_tests: dict) -> None:
 def _generate_markdown_report(bench_result, ablation_result, output_dir: Path) -> str:
     """Build and write a comprehensive narrative Markdown report."""
     md = ["# HelixFactor Phase 2 Benchmark Report\n"]
-    md.append(f"**Generated:** {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+    md.append(
+        f"**Generated:** {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+    )
 
     md.append("\n## Table 1: Factor Library Metrics\n")
     md.append(bench_result.factor_library_metrics.to_markdown(index=False, floatfmt=".4f"))
@@ -431,9 +453,7 @@ def _generate_markdown_report(bench_result, ablation_result, output_dir: Path) -
 
     if not getattr(bench_result, "cost_pressure_metrics", pd.DataFrame()).empty:
         md.append("\n\n## Table 6: Cost Pressure Metrics\n")
-        md.append(
-            bench_result.cost_pressure_metrics.to_markdown(index=False, floatfmt=".4f")
-        )
+        md.append(bench_result.cost_pressure_metrics.to_markdown(index=False, floatfmt=".4f"))
 
     runtime_topk = _runtime_topk_markdown(getattr(bench_result, "runtime_artifacts", {}))
     if runtime_topk:
@@ -448,9 +468,15 @@ def _generate_markdown_report(bench_result, ablation_result, output_dir: Path) -
         boot = stat.get("bootstrap_ci_95", {})
         tt = stat.get("paired_t_test", {})
         md.append("| Test | Statistic | p-value | Significant |\n|---|---|---|---|\n")
-        md.append(f"| Diebold-Mariano | {dm.get('dm_stat', 0):.4f} | {dm.get('p_value', 1):.4f} | {dm.get('significant', False)} |\n")
-        md.append(f"| Paired t-test | {tt.get('t_stat', 0):.4f} | {tt.get('p_value', 1):.4f} | {tt.get('p_value', 1) < 0.05} |\n")
-        md.append(f"| Bootstrap CI (95%) | [{boot.get('lower', 0):.4f}, {boot.get('upper', 0):.4f}] | — | {boot.get('excludes_zero', False)} |\n")
+        md.append(
+            f"| Diebold-Mariano | {dm.get('dm_stat', 0):.4f} | {dm.get('p_value', 1):.4f} | {dm.get('significant', False)} |\n"
+        )
+        md.append(
+            f"| Paired t-test | {tt.get('t_stat', 0):.4f} | {tt.get('p_value', 1):.4f} | {tt.get('p_value', 1) < 0.05} |\n"
+        )
+        md.append(
+            f"| Bootstrap CI (95%) | [{boot.get('lower', 0):.4f}, {boot.get('upper', 0):.4f}] | — | {boot.get('excludes_zero', False)} |\n"
+        )
 
     if ablation_result is not None and ablation_result.contributions is not None:
         md.append("\n\n## Ablation Study: Component Contributions\n")
@@ -478,6 +504,7 @@ def _write_markdown_table(bench_result, output_dir: Path) -> str:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     args = _parse_args()
@@ -523,14 +550,14 @@ def main() -> None:
                 seed=args.seed,
             )
         )
-        print(f"  Generated in {time.perf_counter()-t0:.1f}s")
+        print(f"  Generated in {time.perf_counter() - t0:.1f}s")
     else:
         print(f"  Loading real data from: {args.data}")
         t0 = time.perf_counter()
         from factorminer.data.loader import load_market_data
 
         raw_df = load_market_data(args.data, universe=cfg.data.universe)
-        print(f"  Loaded in {time.perf_counter()-t0:.1f}s")
+        print(f"  Loaded in {time.perf_counter() - t0:.1f}s")
 
     train_period, test_period = _derive_split_periods(raw_df)
     cfg_runtime = copy.deepcopy(cfg)
@@ -547,7 +574,9 @@ def main() -> None:
         cfg_runtime.mining.correlation_threshold = 1.1
 
     print(f"  Shape: M={raw_df['asset_id'].nunique()}, T={raw_df.groupby('asset_id').size().min()}")
-    print(f"  Train: [{train_period[0]}, {train_period[1]}]  Test: [{test_period[0]}, {test_period[1]}]")
+    print(
+        f"  Train: [{train_period[0]}, {train_period[1]}]  Test: [{test_period[0]}, {test_period[1]}]"
+    )
 
     # ================================================================
     # STEP 2: Main Comparison Benchmark
@@ -673,7 +702,9 @@ def main() -> None:
     if not bench_result.turnover_metrics.empty:
         bench_result.turnover_metrics.to_csv(output_dir / "turnover_metrics.csv", index=False)
     if not bench_result.cost_pressure_metrics.empty:
-        bench_result.cost_pressure_metrics.to_csv(output_dir / "cost_pressure_metrics.csv", index=False)
+        bench_result.cost_pressure_metrics.to_csv(
+            output_dir / "cost_pressure_metrics.csv", index=False
+        )
     runtime_topk = _runtime_topk_frame(runtime_artifacts)
     if not runtime_topk.empty:
         runtime_topk.to_csv(output_dir / "runtime_topk.csv", index=False)
@@ -702,7 +733,11 @@ def main() -> None:
                 output_dir / "ablation_contributions.csv", index=False
             )
         with open(output_dir / "ablation_table.tex", "w") as f:
-            f.write(ablation_result.contributions.to_latex(index=False) if ablation_result.contributions is not None else "% No ablation data available")
+            f.write(
+                ablation_result.contributions.to_latex(index=False)
+                if ablation_result.contributions is not None
+                else "% No ablation data available"
+            )
 
     # Bar chart comparison
     try:
@@ -732,9 +767,7 @@ def main() -> None:
             (output_dir / "cost_pressure_metrics.csv").resolve()
         )
     if (output_dir / "runtime_topk.csv").exists():
-        phase2_artifact_paths["runtime_topk"] = str(
-            (output_dir / "runtime_topk.csv").resolve()
-        )
+        phase2_artifact_paths["runtime_topk"] = str((output_dir / "runtime_topk.csv").resolve())
     if (output_dir / "comparison_plot.png").exists():
         phase2_artifact_paths["comparison_plot"] = str(
             (output_dir / "comparison_plot.png").resolve()
@@ -744,9 +777,7 @@ def main() -> None:
             (output_dir / "ablation_contributions.csv").resolve()
         )
     if ablation_result is not None:
-        phase2_artifact_paths["ablation_table"] = str(
-            (output_dir / "ablation_table.tex").resolve()
-        )
+        phase2_artifact_paths["ablation_table"] = str((output_dir / "ablation_table.tex").resolve())
 
     phase2_manifest = _build_phase2_manifest(
         output_dir=output_dir.resolve(),

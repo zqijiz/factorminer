@@ -102,8 +102,7 @@ def _ensure_networkx() -> None:
     """Raise a clear error if networkx is not installed."""
     if nx is None:
         raise ImportError(
-            "networkx is required for FactorKnowledgeGraph. "
-            "Install it with: pip install networkx"
+            "networkx is required for FactorKnowledgeGraph. Install it with: pip install networkx"
         )
 
 
@@ -354,11 +353,7 @@ class FactorKnowledgeGraph:
 
     def get_factor_count(self) -> int:
         """Return the number of factor nodes in the graph."""
-        return sum(
-            1
-            for _, d in self._graph.nodes(data=True)
-            if d.get("node_type") == "factor"
-        )
+        return sum(1 for _, d in self._graph.nodes(data=True) if d.get("node_type") == "factor")
 
     def get_edge_count(self) -> int:
         """Return total number of edges in the graph."""

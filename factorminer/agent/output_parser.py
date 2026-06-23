@@ -50,7 +50,10 @@ def _infer_category(formula: str) -> str:
     """Infer a rough category from the outermost operators in the formula."""
     formula.lower()
     # Check for cross-sectional operators at the top
-    if any(op in formula for op in ("CsRank", "CsZScore", "CsDemean", "CsScale", "CsNeutralize", "CsQuantile")):
+    if any(
+        op in formula
+        for op in ("CsRank", "CsZScore", "CsDemean", "CsScale", "CsNeutralize", "CsQuantile")
+    ):
         # Look deeper for sub-category
         if any(op in formula for op in ("Corr", "Cov", "Beta", "Resid")):
             return "cross_sectional_regression"
@@ -80,28 +83,24 @@ def _infer_category(formula: str) -> str:
 
 # Pattern: "1. name: formula" or "1) name: formula"
 _NUMBERED_PATTERN = re.compile(
-    r"^\s*\d+[\.\)]\s*"          # numbered prefix
+    r"^\s*\d+[\.\)]\s*"  # numbered prefix
     r"([a-zA-Z_][a-zA-Z0-9_]*)"  # factor name
-    r"\s*:\s*"                    # colon separator
-    r"(.+)$"                      # formula
+    r"\s*:\s*"  # colon separator
+    r"(.+)$"  # formula
 )
 
 # Pattern: "name: formula" (no number)
 _PLAIN_PATTERN = re.compile(
     r"^\s*([a-zA-Z_][a-zA-Z0-9_]*)"  # factor name
-    r"\s*:\s*"                         # colon separator
-    r"(.+)$"                           # formula
+    r"\s*:\s*"  # colon separator
+    r"(.+)$"  # formula
 )
 
 # Pattern: just a formula starting with an operator
-_FORMULA_ONLY_PATTERN = re.compile(
-    r"^\s*([A-Z][a-zA-Z]*\(.+\))\s*$"
-)
+_FORMULA_ONLY_PATTERN = re.compile(r"^\s*([A-Z][a-zA-Z]*\(.+\))\s*$")
 
 # Pattern: JSON-like {"name": "...", "formula": "..."}
-_JSON_PATTERN = re.compile(
-    r'"name"\s*:\s*"([^"]+)"\s*,\s*"formula"\s*:\s*"([^"]+)"'
-)
+_JSON_PATTERN = re.compile(r'"name"\s*:\s*"([^"]+)"\s*,\s*"formula"\s*:\s*"([^"]+)"')
 
 
 def _strip_markdown(text: str) -> str:

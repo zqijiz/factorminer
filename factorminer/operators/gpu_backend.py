@@ -21,6 +21,7 @@ except ImportError:
 # Device management
 # ---------------------------------------------------------------------------
 
+
 class DeviceManager:
     """Singleton-style helper that picks the best available device."""
 
@@ -64,6 +65,7 @@ device_manager = DeviceManager()
 # Conversion helpers
 # ---------------------------------------------------------------------------
 
+
 def to_tensor(
     arr: np.ndarray,
     device: torch.device | None = None,
@@ -85,6 +87,7 @@ def to_numpy(tensor: torch.Tensor) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # Batch execution helper
 # ---------------------------------------------------------------------------
+
 
 def batch_execute(
     fn,

@@ -7,7 +7,8 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 import numpy as np
-from scipy.stats import rankdata
+import pandas as pd
+import pandas as pd
 
 from factorminer.architecture.dependence import DistanceCorrelationMetric
 from factorminer.architecture.families import FactorFamilyDiscovery, infer_family
@@ -154,7 +155,12 @@ def _linear_fit_predict(
 
 
 def _gaussian_copula_mi_proxy(x: np.ndarray, y: np.ndarray) -> float:
-    rho = abs(_safe_corr(rankdata(x), rankdata(y)))
+    rho = abs(
+        _safe_corr(
+            pd.Series(x).rank(method="average", na_option="keep").to_numpy(),
+            pd.Series(y).rank(method="average", na_option="keep").to_numpy(),
+        )
+    )
     rho = min(max(rho, 0.0), 0.999999)
     if rho <= 0.0:
         return 0.0
@@ -173,8 +179,8 @@ def _mutual_information_proxy(x: np.ndarray, y: np.ndarray) -> tuple[float, str]
     if mutual_info_regression is None:
         return _gaussian_copula_mi_proxy(x, y), "gaussian_copula"
 
-    x_ranked = rankdata(x).reshape(-1, 1)
-    y_ranked = rankdata(y)
+    x_ranked = pd.Series(x).rank(method="average", na_option="keep").to_numpy().reshape(-1, 1)
+    y_ranked = pd.Series(y).rank(method="average", na_option="keep").to_numpy()
     neighbors = max(2, min(5, x_ranked.shape[0] - 1))
     try:
         raw = float(
@@ -224,7 +230,14 @@ def _periodwise_nonlinear_scores(
             )
         )
         pearson_scores.append(abs(_safe_corr(col_candidate, col_reference)))
-        spearman_scores.append(abs(_safe_corr(rankdata(col_candidate), rankdata(col_reference))))
+        spearman_scores.append(
+            abs(
+                _safe_corr(
+                    pd.Series(col_candidate).rank(method="average", na_option="keep").to_numpy(),
+                    pd.Series(col_reference).rank(method="average", na_option="keep").to_numpy(),
+                )
+            )
+        )
         mi_raw, mi_method = _mutual_information_proxy(col_candidate, col_reference)
         mi_scores.append(float(1.0 - np.exp(-max(mi_raw, 0.0))))
 

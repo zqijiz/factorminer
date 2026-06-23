@@ -55,17 +55,13 @@ class MiningConfig:
         if self.replacement_ic_ratio < 1.0:
             raise ValueError("replacement_ic_ratio must be >= 1.0")
         if self.backend not in ("gpu", "numpy", "c"):
-            raise ValueError(
-                f"backend must be one of: gpu, numpy, c (got '{self.backend}')"
-            )
+            raise ValueError(f"backend must be one of: gpu, numpy, c (got '{self.backend}')")
         if self.redundancy_metric not in ("spearman", "pearson", "distance_correlation"):
             raise ValueError(
                 "redundancy_metric must be one of: spearman, pearson, distance_correlation"
             )
         if self.signal_failure_policy not in ("reject", "synthetic", "raise"):
-            raise ValueError(
-                "signal_failure_policy must be one of: reject, synthetic, raise"
-            )
+            raise ValueError("signal_failure_policy must be one of: reject, synthetic, raise")
         if self.memory_policy not in (
             "paper",
             "none",

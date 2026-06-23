@@ -129,7 +129,9 @@ class LoopExecutionService:
             ic_passed=int(telemetry.stats.get("ic_passed", 0)),
             correlation_passed=int(telemetry.stats.get("corr_passed", 0)),
             admitted=int(telemetry.stats.get("admitted", 0)),
-            rejected=max(telemetry.candidates_generated - int(telemetry.stats.get("admitted", 0)), 0),
+            rejected=max(
+                telemetry.candidates_generated - int(telemetry.stats.get("admitted", 0)), 0
+            ),
             replaced=int(telemetry.stats.get("replaced", 0)),
             library_size=int(telemetry.stats.get("library_size", 0)),
             best_ic=max(ic_values) if ic_values else 0.0,

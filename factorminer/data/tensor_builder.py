@@ -18,7 +18,14 @@ logger = logging.getLogger(__name__)
 
 # Default feature ordering matching the paper specification
 DEFAULT_FEATURES: list[str] = [
-    "open", "high", "low", "close", "volume", "amount", "vwap", "returns",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+    "amount",
+    "vwap",
+    "returns",
 ]
 
 Backend = Literal["numpy", "torch", "cupy"]
@@ -80,6 +87,7 @@ class TensorConfig:
 # ---------------------------------------------------------------------------
 # Target variable
 # ---------------------------------------------------------------------------
+
 
 def compute_target(df: pd.DataFrame) -> pd.DataFrame:
     """Compute the target: next-bar open-to-close return.
@@ -171,6 +179,7 @@ def _resolve_target_offsets(spec: TargetSpec) -> tuple[str, str, int, int]:
 # Tensor construction helpers
 # ---------------------------------------------------------------------------
 
+
 def _to_backend(arr: np.ndarray, backend: Backend, dtype: str):
     """Convert a numpy array to the requested backend."""
     np_dtype = getattr(np, dtype, np.float32)
@@ -184,8 +193,7 @@ def _to_backend(arr: np.ndarray, backend: Backend, dtype: str):
             import torch
         except ImportError as exc:
             raise ImportError(
-                "PyTorch is required for backend='torch'. "
-                "Install with: pip install torch"
+                "PyTorch is required for backend='torch'. Install with: pip install torch"
             ) from exc
         torch_dtype = getattr(torch, dtype, torch.float32)
         return torch.from_numpy(arr).to(torch_dtype)
@@ -195,8 +203,7 @@ def _to_backend(arr: np.ndarray, backend: Backend, dtype: str):
             import cupy  # type: ignore[import-untyped]
         except ImportError as exc:
             raise ImportError(
-                "CuPy is required for backend='cupy'. "
-                "Install with: pip install cupy"
+                "CuPy is required for backend='cupy'. Install with: pip install cupy"
             ) from exc
         return cupy.asarray(arr, dtype=dtype)
 
@@ -234,6 +241,7 @@ def _build_3d(
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class TensorDataset:
@@ -342,6 +350,7 @@ def build_tensor(
 # Temporal split
 # ---------------------------------------------------------------------------
 
+
 def temporal_split(
     ds: TensorDataset,
     train_end: str | None = None,
@@ -419,6 +428,7 @@ def temporal_split(
 # Asset subset sampling
 # ---------------------------------------------------------------------------
 
+
 def sample_assets(
     ds: TensorDataset,
     m: int,
@@ -465,8 +475,7 @@ def sample_assets(
         data=d_sub,
         target=t_sub,
         targets={
-            name: target[idx, :] if target is not None else None
-            for name, target in targets.items()
+            name: target[idx, :] if target is not None else None for name, target in targets.items()
         },
         default_target=ds.default_target,
         asset_ids=ds.asset_ids[idx],

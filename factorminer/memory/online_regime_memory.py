@@ -62,12 +62,14 @@ logger = logging.getLogger(__name__)
 # MemorySignal — returned by OnlineRegimeMemory.retrieve()
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class MemorySignal:
     """Structured memory signal for LLM prompt injection.
 
     Wraps the standard retrieval result with regime-specific additions.
     """
+
     recommended_directions: list[dict]
     forbidden_directions: list[dict]
     insights: list[dict]
@@ -91,7 +93,8 @@ class MemorySignal:
             "regime_patterns": self.regime_patterns,
             "cross_regime_patterns": self.cross_regime_patterns,
             "forecasted_regime": self.forecasted_regime.to_dict()
-                if self.forecasted_regime else None,
+            if self.forecasted_regime
+            else None,
             "forecast_confidence": self.forecast_confidence,
         }
 
@@ -99,6 +102,7 @@ class MemorySignal:
 # ---------------------------------------------------------------------------
 # RegimeSpecificPattern & RegimeSpecificPatternStore
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class RegimeSpecificPattern:
@@ -127,14 +131,13 @@ class RegimeSpecificPattern:
     n_in_regime : int
         Observations when regime matched.
     """
+
     formula_template: str
     regime: RegimeState
     ic_in_regime: float = 0.0
     ic_out_of_regime: float = 0.0
     regime_specificity: float = 1.0
-    discovery_date: datetime = field(
-        default_factory=lambda: datetime.now(tz=timezone.utc)
-    )
+    discovery_date: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
     confidence: float = 1.0
     n_observations: int = 1
     n_in_regime: int = 0
@@ -149,9 +152,7 @@ class RegimeSpecificPattern:
         else:
             self.ic_out_of_regime = (1 - alpha) * self.ic_out_of_regime + alpha * ic
         # Recompute specificity
-        self.regime_specificity = abs(self.ic_in_regime) / (
-            abs(self.ic_out_of_regime) + 1e-8
-        )
+        self.regime_specificity = abs(self.ic_in_regime) / (abs(self.ic_out_of_regime) + 1e-8)
 
     def to_dict(self) -> dict:
         return {
@@ -409,8 +410,7 @@ class RegimeSpecificPatternStore:
         worst_key = min(
             self._patterns,
             key=lambda k: (
-                self._patterns[k].confidence
-                * (abs(self._patterns[k].ic_in_regime) + 1e-8)
+                self._patterns[k].confidence * (abs(self._patterns[k].ic_in_regime) + 1e-8)
             ),
         )
         del self._patterns[worst_key]
@@ -419,6 +419,7 @@ class RegimeSpecificPatternStore:
 # ---------------------------------------------------------------------------
 # OnlineMemoryUpdater
 # ---------------------------------------------------------------------------
+
 
 class OnlineMemoryUpdater:
     """Streaming experience-memory updater with exponential forgetting.
@@ -475,9 +476,7 @@ class OnlineMemoryUpdater:
         self._last_decay_iteration: int = 0
 
         # Per-regime IC accumulators: regime_str -> deque of ICs
-        self._regime_ic_history: dict[str, deque] = defaultdict(
-            lambda: deque(maxlen=200)
-        )
+        self._regime_ic_history: dict[str, deque] = defaultdict(lambda: deque(maxlen=200))
 
         # Outcome stats
         self._outcome_counts: dict[str, int] = defaultdict(int)
@@ -522,9 +521,7 @@ class OnlineMemoryUpdater:
 
             # Boost success patterns that match admitted factors
             if outcome == "admitted" and abs(ic) >= 0.03:
-                boost_factor = 1 + int(
-                    self.regime_sensitivity * 2 * abs(ic) / 0.1
-                )
+                boost_factor = 1 + int(self.regime_sensitivity * 2 * abs(ic) / 0.1)
                 # Try to match formula against existing success pattern templates
                 for pat in self._base_memory.success_patterns:
                     if _formula_matches_template(formula, pat.template):
@@ -534,9 +531,7 @@ class OnlineMemoryUpdater:
 
         elapsed_ms = (time.perf_counter() - t0) * 1000
         if elapsed_ms > 1.0:
-            logger.debug(
-                "on_factor_evaluated took %.2f ms (target < 1 ms)", elapsed_ms
-            )
+            logger.debug("on_factor_evaluated took %.2f ms (target < 1 ms)", elapsed_ms)
 
     def apply_forgetting(self, iterations_elapsed: int = 1) -> None:
         """Exponentially decay pattern confidence and prune stale entries.
@@ -585,12 +580,12 @@ class OnlineMemoryUpdater:
 
                 if any(lbl in desc_lower or lbl in name_lower for lbl in new_labels_lower):
                     self._base_memory = bump_pattern_confidence(
-                        self._base_memory, pat.name,
-                        boost=int(self.regime_boost * 10)
+                        self._base_memory, pat.name, boost=int(self.regime_boost * 10)
                     )
                 elif any(lbl in desc_lower or lbl in name_lower for lbl in old_labels_lower):
                     self._base_memory = penalise_pattern_confidence(
-                        self._base_memory, pat.name,
+                        self._base_memory,
+                        pat.name,
                         penalty=self.regime_penalty,
                     )
 
@@ -629,9 +624,7 @@ class OnlineMemoryUpdater:
         """
         with self._lock:
             mem = self._base_memory
-            all_counts = [
-                p.occurrence_count for p in mem.success_patterns
-            ] + [
+            all_counts = [p.occurrence_count for p in mem.success_patterns] + [
                 f.occurrence_count for f in mem.forbidden_directions
             ]
             max_c = max(all_counts) if all_counts else 1
@@ -641,9 +634,7 @@ class OnlineMemoryUpdater:
             avg_conf = float(np.mean(norm_confs)) if norm_confs else 0.0
 
             # Regime distribution from IC history
-            regime_dist = {
-                k: len(v) for k, v in self._regime_ic_history.items()
-            }
+            regime_dist = {k: len(v) for k, v in self._regime_ic_history.items()}
 
             # Staleness: fraction of patterns with count 0 (never updated)
             n_patterns = len(mem.success_patterns) + len(mem.forbidden_directions)
@@ -674,9 +665,7 @@ class OnlineMemoryUpdater:
                 "outcome_counts": dict(self._outcome_counts),
                 "base_memory": self._base_memory.to_dict(),
                 # Regime IC history stores last N ICs per regime
-                "regime_ic_history": {
-                    k: list(v) for k, v in self._regime_ic_history.items()
-                },
+                "regime_ic_history": {k: list(v) for k, v in self._regime_ic_history.items()},
             }
 
     @classmethod
@@ -701,6 +690,7 @@ class OnlineMemoryUpdater:
 # ---------------------------------------------------------------------------
 # RegimeTransitionForecaster
 # ---------------------------------------------------------------------------
+
 
 class RegimeTransitionForecaster:
     """Logistic-regression forecaster for regime transitions.
@@ -858,11 +848,7 @@ class RegimeTransitionForecaster:
 
             if not self._fitted or self._model is None:
                 # Fall back to current regime
-                current = (
-                    self._regime_history[-1]
-                    if self._regime_history
-                    else RegimeState()
-                )
+                current = self._regime_history[-1] if self._regime_history else RegimeState()
                 return current, 0.0
 
             scaler, model = self._model
@@ -965,13 +951,10 @@ class RegimeTransitionForecaster:
         forecaster._feature_history = [
             np.array(f, dtype=np.float64) for f in d.get("feature_history", [])
         ]
-        forecaster._regime_history = [
-            RegimeState.from_dict(r) for r in d.get("regime_history", [])
-        ]
+        forecaster._regime_history = [RegimeState.from_dict(r) for r in d.get("regime_history", [])]
         forecaster._next_regime_labels = d.get("next_regime_labels", [])
         forecaster._known_regimes = {
-            k: RegimeState.from_dict(v)
-            for k, v in d.get("known_regimes", {}).items()
+            k: RegimeState.from_dict(v) for k, v in d.get("known_regimes", {}).items()
         }
         forecaster._predict_call_count = d.get("predict_call_count", 0)
         if d.get("fitted", False):
@@ -982,6 +965,7 @@ class RegimeTransitionForecaster:
 # ---------------------------------------------------------------------------
 # OnlineRegimeMemory — main orchestrator
 # ---------------------------------------------------------------------------
+
 
 class OnlineRegimeMemory:
     """Full online regime-aware memory system.
@@ -1035,8 +1019,11 @@ class OnlineRegimeMemory:
             base_memory = ExperienceMemory()
 
         streaming_cfg = StreamingRegimeConfig(
-            **{k: v for k, v in cfg.get("streaming_config", {}).items()
-               if k in StreamingRegimeConfig.__dataclass_fields__}
+            **{
+                k: v
+                for k, v in cfg.get("streaming_config", {}).items()
+                if k in StreamingRegimeConfig.__dataclass_fields__
+            }
         )
         self._detector = StreamingRegimeDetector(config=streaming_cfg)
         self._pattern_store = RegimeSpecificPatternStore(
@@ -1093,9 +1080,7 @@ class OnlineRegimeMemory:
                 feat = self._build_feature_vector(new_regime)
                 predicted, prob = self._forecaster.predict_next_regime(feat)
                 if prob > 0.5:
-                    self._forecaster.prepare_memory_for_transition(
-                        predicted, self._pattern_store
-                    )
+                    self._forecaster.prepare_memory_for_transition(predicted, self._pattern_store)
 
             self._prev_regime = prev
             self._current_regime = new_regime
@@ -1156,9 +1141,7 @@ class OnlineRegimeMemory:
 
             # Periodic forgetting
             if self._iteration_count % self._forget_every == 0:
-                self._updater.apply_forgetting(
-                    iterations_elapsed=self._forget_every
-                )
+                self._updater.apply_forgetting(iterations_elapsed=self._forget_every)
                 decay = (1.0 - self._updater.forgetting_rate) ** self._forget_every
                 self._pattern_store.apply_decay(decay)
 
@@ -1318,20 +1301,12 @@ class OnlineRegimeMemory:
 
     def _from_dict_inplace(self, d: dict) -> None:
         self._iteration_count = d.get("iteration_count", 0)
-        self._current_regime = RegimeState.from_dict(
-            d.get("current_regime", {})
-        )
-        self._prev_regime = RegimeState.from_dict(
-            d.get("prev_regime", {})
-        )
+        self._current_regime = RegimeState.from_dict(d.get("current_regime", {}))
+        self._prev_regime = RegimeState.from_dict(d.get("prev_regime", {}))
         self._forget_every = d.get("forget_every", 10)
         self._updater = OnlineMemoryUpdater.from_dict(d["updater"])
-        self._pattern_store = RegimeSpecificPatternStore.from_dict(
-            d["pattern_store"]
-        )
-        self._forecaster = RegimeTransitionForecaster.from_dict(
-            d["forecaster"]
-        )
+        self._pattern_store = RegimeSpecificPatternStore.from_dict(d["pattern_store"])
+        self._forecaster = RegimeTransitionForecaster.from_dict(d["forecaster"])
 
     # pickle support
     def __getstate__(self) -> dict:
@@ -1355,13 +1330,12 @@ class OnlineRegimeMemory:
         # Use the ratio of fast/slow variance as a Hurst proxy
         slow_var = max(self._detector._ew_var_slow, 1e-16)
         fast_var = max(self._detector._ew_var, 1e-16)
-        hurst_proxy = float(np.clip(
-            0.5 + 0.5 * math.log(fast_var / slow_var + 1e-10) / (math.log(20) + 1e-10),
-            0.0, 1.0
-        ))
-        return RegimeTransitionForecaster.build_feature_vector(
-            ew_mean, ew_std, hurst_proxy, regime
+        hurst_proxy = float(
+            np.clip(
+                0.5 + 0.5 * math.log(fast_var / slow_var + 1e-10) / (math.log(20) + 1e-10), 0.0, 1.0
+            )
         )
+        return RegimeTransitionForecaster.build_feature_vector(ew_mean, ew_std, hurst_proxy, regime)
 
     @staticmethod
     def _format_regime_section(
@@ -1376,10 +1350,7 @@ class OnlineRegimeMemory:
             f"Current regime: {current}",
         ]
         if forecast_conf > 0.3:
-            lines.append(
-                f"Forecasted next regime: {predicted} "
-                f"(confidence {forecast_conf:.1%})"
-            )
+            lines.append(f"Forecasted next regime: {predicted} (confidence {forecast_conf:.1%})")
         if regime_patterns:
             lines.append("\nTop patterns for current regime:")
             for i, p in enumerate(regime_patterns, 1):
@@ -1405,9 +1376,11 @@ class OnlineRegimeMemory:
 # MemoryForgetCurve
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class _MemorySnapshot:
     """Internal snapshot used by MemoryForgetCurve."""
+
     iteration: int
     timestamp: float
     active_patterns: int
@@ -1450,10 +1423,7 @@ class MemoryForgetCurve:
 
         # Collect per-pattern confidences from the regime pattern store
         with memory._lock:
-            confs = [
-                p.confidence
-                for p in memory._pattern_store._patterns.values()
-            ]
+            confs = [p.confidence for p in memory._pattern_store._patterns.values()]
 
         snap = _MemorySnapshot(
             iteration=iteration,
@@ -1467,7 +1437,7 @@ class MemoryForgetCurve:
         with self._lock:
             self._snapshots.append(snap)
             if len(self._snapshots) > self.max_snapshots:
-                self._snapshots = self._snapshots[-self.max_snapshots:]
+                self._snapshots = self._snapshots[-self.max_snapshots :]
 
     def get_pattern_lifetimes(self) -> list[float]:
         """Estimate pattern lifetimes (iterations survived) from snapshot series.
@@ -1555,12 +1525,9 @@ class MemoryForgetCurve:
 
         except ImportError:
             # Fallback: ASCII table
-            print(
-                f"{'Iter':>8} {'AvgConf':>10} {'Active':>8} "
-                f"{'RegimePats':>12} {'Staleness':>10}"
-            )
+            print(f"{'Iter':>8} {'AvgConf':>10} {'Active':>8} {'RegimePats':>12} {'Staleness':>10}")
             print("-" * 52)
-            for s in snapshots[::max(1, len(snapshots) // 20)]:
+            for s in snapshots[:: max(1, len(snapshots) // 20)]:
                 print(
                     f"{s.iteration:>8} {s.avg_confidence:>10.4f} "
                     f"{s.active_patterns:>8} {s.n_regime_patterns:>12} "
@@ -1605,6 +1572,7 @@ class MemoryForgetCurve:
 # Utility helpers
 # ---------------------------------------------------------------------------
 
+
 def _formula_matches_template(formula: str, template: str) -> bool:
     """Heuristic check: does a formula share structural operators with a template?
 
@@ -1612,6 +1580,7 @@ def _formula_matches_template(formula: str, template: str) -> bool:
     meaningful overlap (>= 1 shared operator, or substring containment).
     """
     import re
+
     op_re = re.compile(r"\b([A-Z][a-zA-Z]+)\(")
     f_ops = set(op_re.findall(formula))
     t_ops = set(op_re.findall(template))
@@ -1619,7 +1588,4 @@ def _formula_matches_template(formula: str, template: str) -> bool:
         return False
     overlap = f_ops & t_ops
     # At least 1 operator shared AND at least half of template ops present
-    return (
-        len(overlap) >= 1
-        and len(overlap) / max(len(t_ops), 1) >= 0.4
-    )
+    return len(overlap) >= 1 and len(overlap) / max(len(t_ops), 1) >= 0.4

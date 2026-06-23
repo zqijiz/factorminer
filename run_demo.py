@@ -37,9 +37,9 @@ from factorminer.evaluation.metrics import (
 
 
 def section(title):
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"  {title}")
-    print(f"{'='*70}\n")
+    print(f"{'=' * 70}\n")
 
 
 def main():
@@ -76,8 +76,14 @@ def main():
     # Pivot to (M, T) arrays
     data_dict = {}
     feature_map = {
-        "$open": "open", "$high": "high", "$low": "low", "$close": "close",
-        "$volume": "volume", "$amt": "amount", "$vwap": "vwap", "$returns": "returns",
+        "$open": "open",
+        "$high": "high",
+        "$low": "low",
+        "$close": "close",
+        "$volume": "volume",
+        "$amt": "amount",
+        "$vwap": "vwap",
+        "$returns": "returns",
     }
     for feat_name, col_name in feature_map.items():
         if col_name in processed.columns:
@@ -121,17 +127,19 @@ def main():
             icir = compute_icir(ic_series)
             win_rate = compute_ic_win_rate(ic_series)
 
-            results.append({
-                "id": fid,
-                "name": fname,
-                "formula": formula,
-                "category": category,
-                "ic_mean": ic_mean,
-                "icir": icir,
-                "win_rate": win_rate,
-                "signals": signals,
-                "ic_series": ic_series,
-            })
+            results.append(
+                {
+                    "id": fid,
+                    "name": fname,
+                    "formula": formula,
+                    "category": category,
+                    "ic_mean": ic_mean,
+                    "icir": icir,
+                    "win_rate": win_rate,
+                    "signals": signals,
+                    "ic_series": ic_series,
+                }
+            )
         except Exception:
             eval_failures += 1
 
@@ -144,10 +152,12 @@ def main():
 
     print("\n  Top 20 Factors by |IC|:")
     print(f"  {'ID':<5} {'Name':<40} {'Cat':<15} {'IC':>8} {'ICIR':>8} {'Win%':>6}")
-    print(f"  {'-'*5} {'-'*40} {'-'*15} {'-'*8} {'-'*8} {'-'*6}")
+    print(f"  {'-' * 5} {'-' * 40} {'-' * 15} {'-' * 8} {'-' * 8} {'-' * 6}")
     for r in results[:20]:
-        print(f"  {r['id']:<5} {r['name'][:40]:<40} {r['category'][:15]:<15} "
-              f"{r['ic_mean']:>8.4f} {r['icir']:>8.3f} {r['win_rate']:>5.1%}")
+        print(
+            f"  {r['id']:<5} {r['name'][:40]:<40} {r['category'][:15]:<15} "
+            f"{r['ic_mean']:>8.4f} {r['icir']:>8.3f} {r['win_rate']:>5.1%}"
+        )
 
     # Category breakdown
     print("\n  Category Breakdown:")
@@ -234,24 +244,30 @@ def main():
         # Equal weight
         ew = combiner.equal_weight(factor_signals)
         ew_ic = compute_ic(ew, forward_returns)
-        print(f"  Equal-Weight:  IC={compute_ic_mean(ew_ic):.4f}, "
-              f"ICIR={compute_icir(ew_ic):.3f}, "
-              f"Win={compute_ic_win_rate(ew_ic):.1%}")
+        print(
+            f"  Equal-Weight:  IC={compute_ic_mean(ew_ic):.4f}, "
+            f"ICIR={compute_icir(ew_ic):.3f}, "
+            f"Win={compute_ic_win_rate(ew_ic):.1%}"
+        )
 
         # IC-weighted
         icw = combiner.ic_weighted(factor_signals, ic_values)
         icw_ic = compute_ic(icw, forward_returns)
-        print(f"  IC-Weighted:   IC={compute_ic_mean(icw_ic):.4f}, "
-              f"ICIR={compute_icir(icw_ic):.3f}, "
-              f"Win={compute_ic_win_rate(icw_ic):.1%}")
+        print(
+            f"  IC-Weighted:   IC={compute_ic_mean(icw_ic):.4f}, "
+            f"ICIR={compute_icir(icw_ic):.3f}, "
+            f"Win={compute_ic_win_rate(icw_ic):.1%}"
+        )
 
         # Orthogonal
         try:
             ortho = combiner.orthogonal(factor_signals)
             ortho_ic = compute_ic(ortho, forward_returns)
-            print(f"  Orthogonal:    IC={compute_ic_mean(ortho_ic):.4f}, "
-                  f"ICIR={compute_icir(ortho_ic):.3f}, "
-                  f"Win={compute_ic_win_rate(ortho_ic):.1%}")
+            print(
+                f"  Orthogonal:    IC={compute_ic_mean(ortho_ic):.4f}, "
+                f"ICIR={compute_icir(ortho_ic):.3f}, "
+                f"Win={compute_ic_win_rate(ortho_ic):.1%}"
+            )
         except Exception as e:
             print(f"  Orthogonal:    skipped ({e})")
 
@@ -267,12 +283,15 @@ def main():
     classification = detector.classify(forward_returns)
 
     from factorminer.evaluation.regime import MarketRegime
+
     for regime in MarketRegime:
         mask = classification.periods[regime]
         n = int(mask.sum())
         stats = classification.stats[regime]
-        print(f"  {regime.value:>10}: {n:>4} periods "
-              f"(avg_ret={stats['mean_return']:.4f}, vol={stats['volatility']:.4f})")
+        print(
+            f"  {regime.value:>10}: {n:>4} periods "
+            f"(avg_ret={stats['mean_return']:.4f}, vol={stats['volatility']:.4f})"
+        )
 
     if library.size > 0:
         evaluator = RegimeAwareEvaluator(forward_returns, classification, regime_config)
@@ -282,7 +301,9 @@ def main():
             print(f"\n  Top factor '{best_factor.name}' regime analysis:")
             for regime, ic_val in regime_result.regime_ic.items():
                 print(f"    {regime.value:>10}: IC={ic_val:.4f}")
-            print(f"    Regimes passing: {regime_result.n_regimes_passing}, Passes: {regime_result.passes}")
+            print(
+                f"    Regimes passing: {regime_result.n_regimes_passing}, Passes: {regime_result.passes}"
+            )
 
     # ================================================================
     # STEP 6: Phase 2 - Statistical Significance
@@ -308,9 +329,11 @@ def main():
             ci = bootstrap.compute_ci(factor.name, ic_series)
             p_val = bootstrap.compute_p_value(ic_series)
             p_values[factor.name] = p_val
-            print(f"    {factor.name[:35]:<35} IC={ci.ic_mean:.4f} "
-                  f"CI=[{ci.ci_lower:.4f}, {ci.ci_upper:.4f}] "
-                  f"{'*' if ci.ci_excludes_zero else ' '} p={p_val:.4f}")
+            print(
+                f"    {factor.name[:35]:<35} IC={ci.ic_mean:.4f} "
+                f"CI=[{ci.ci_lower:.4f}, {ci.ci_upper:.4f}] "
+                f"{'*' if ci.ci_excludes_zero else ' '} p={p_val:.4f}"
+            )
 
         # FDR correction
         if len(p_values) >= 2:
@@ -379,14 +402,16 @@ def main():
             if factor_list[i].signals is not None and factor_list[j].signals is not None:
                 corr = library.compute_correlation(factor_list[i].signals, factor_list[j].signals)
                 if abs(corr) > 0.3:
-                    kg.add_correlation_edge(str(factor_list[i].id), str(factor_list[j].id), abs(corr), threshold=0.3)
+                    kg.add_correlation_edge(
+                        str(factor_list[i].id), str(factor_list[j].id), abs(corr), threshold=0.3
+                    )
 
     print(f"  Knowledge Graph: {kg.get_factor_count()} factor nodes, {kg.get_edge_count()} edges")
 
     saturated = kg.find_saturated_regions(threshold=0.3)
     print(f"  Saturated clusters (rho > 0.3): {len(saturated)}")
     for i, cluster in enumerate(saturated[:3]):
-        print(f"    Cluster {i+1}: {len(cluster)} factors")
+        print(f"    Cluster {i + 1}: {len(cluster)} factors")
 
     cooccur = kg.get_operator_cooccurrence()
     if cooccur:

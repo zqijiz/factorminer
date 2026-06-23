@@ -23,9 +23,7 @@ def test_validate_data_accepts_aliases_and_emits_json(tmp_path):
         "alias_data.csv",
         pd.DataFrame(
             {
-                "timestamp": pd.to_datetime(
-                    ["2025-01-01 09:30:00", "2025-01-01 09:40:00"]
-                ),
+                "timestamp": pd.to_datetime(["2025-01-01 09:30:00", "2025-01-01 09:40:00"]),
                 "code": ["600519.SH", "600519.SH"],
                 "open": [10.0, 10.2],
                 "high": [10.3, 10.4],
@@ -99,9 +97,7 @@ def test_validate_data_strict_fails_on_warnings(tmp_path):
         "warning_data.csv",
         pd.DataFrame(
             {
-                "datetime": pd.to_datetime(
-                    ["2025-01-01 09:30:00", "2025-01-01 09:30:00"]
-                ),
+                "datetime": pd.to_datetime(["2025-01-01 09:30:00", "2025-01-01 09:30:00"]),
                 "asset_id": ["A", "A"],
                 "open": [10.0, 10.1],
                 "high": [10.3, 10.4],

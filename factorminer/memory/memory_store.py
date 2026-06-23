@@ -151,14 +151,10 @@ class ExperienceMemory:
     def from_dict(cls, d: dict) -> ExperienceMemory:
         return cls(
             state=MiningState.from_dict(d.get("state", {})),
-            success_patterns=[
-                SuccessPattern.from_dict(p) for p in d.get("success_patterns", [])
-            ],
+            success_patterns=[SuccessPattern.from_dict(p) for p in d.get("success_patterns", [])],
             forbidden_directions=[
                 ForbiddenDirection.from_dict(f) for f in d.get("forbidden_directions", [])
             ],
-            insights=[
-                StrategicInsight.from_dict(i) for i in d.get("insights", [])
-            ],
+            insights=[StrategicInsight.from_dict(i) for i in d.get("insights", [])],
             version=d.get("version", 0),
         )

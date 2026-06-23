@@ -78,9 +78,9 @@ def _matches_pattern(formula: str, signature_keywords: list[str]) -> bool:
     feats = _extract_features(formula)
     all_tokens = [o.upper() for o in ops] + [f.upper() for f in feats]
     match_count = sum(
-        1 for kw in signature_keywords
-        if any(kw.upper() in token for token in all_tokens)
-        or kw.upper() in formula_upper
+        1
+        for kw in signature_keywords
+        if any(kw.upper() in token for token in all_tokens) or kw.upper() in formula_upper
     )
     # Require at least 2 keyword matches (or all if fewer than 2 keywords)
     threshold = min(2, len(signature_keywords))
@@ -106,6 +106,7 @@ def _classify_forbidden_direction(formula: str) -> str | None:
 # ---------------------------------------------------------------------------
 # Trajectory analysis
 # ---------------------------------------------------------------------------
+
 
 def _analyze_admissions(
     trajectory: list[dict],
@@ -255,17 +256,21 @@ def _derive_insights(
     # Insight: overall batch success rate
     if total >= 5:
         if admission_rate > 0.3:
-            insights.append(StrategicInsight(
-                insight="Current direction is productive with high admission rate",
-                evidence=f"Batch {batch_number}: {len(admitted)}/{total} admitted ({admission_rate:.0%})",
-                batch_source=batch_number,
-            ))
+            insights.append(
+                StrategicInsight(
+                    insight="Current direction is productive with high admission rate",
+                    evidence=f"Batch {batch_number}: {len(admitted)}/{total} admitted ({admission_rate:.0%})",
+                    batch_source=batch_number,
+                )
+            )
         elif admission_rate < 0.05:
-            insights.append(StrategicInsight(
-                insight="Current direction is exhausted, need to pivot to new operator combinations",
-                evidence=f"Batch {batch_number}: only {len(admitted)}/{total} admitted ({admission_rate:.0%})",
-                batch_source=batch_number,
-            ))
+            insights.append(
+                StrategicInsight(
+                    insight="Current direction is exhausted, need to pivot to new operator combinations",
+                    evidence=f"Batch {batch_number}: only {len(admitted)}/{total} admitted ({admission_rate:.0%})",
+                    batch_source=batch_number,
+                )
+            )
 
     # Insight: operator frequency analysis
     admitted_ops = Counter()
@@ -281,11 +286,13 @@ def _derive_insights(
     for op, count in admitted_ops.most_common(5):
         rej_count = rejected_ops.get(op, 0)
         if count >= 3 and (rej_count == 0 or count / max(rej_count, 1) > 2.0):
-            insights.append(StrategicInsight(
-                insight=f"Operator '{op}' is highly productive in current search",
-                evidence=f"Appeared in {count} admitted vs {rej_count} rejected factors",
-                batch_source=batch_number,
-            ))
+            insights.append(
+                StrategicInsight(
+                    insight=f"Operator '{op}' is highly productive in current search",
+                    evidence=f"Appeared in {count} admitted vs {rej_count} rejected factors",
+                    batch_source=batch_number,
+                )
+            )
 
     # Insight: feature analysis
     admitted_feats = Counter()
@@ -296,24 +303,29 @@ def _derive_insights(
     if admitted_feats:
         top_feat, top_count = admitted_feats.most_common(1)[0]
         if top_count >= 3:
-            insights.append(StrategicInsight(
-                insight=f"Feature '{top_feat}' appears frequently in successful factors",
-                evidence=f"Present in {top_count}/{len(admitted)} admitted factors",
-                batch_source=batch_number,
-            ))
+            insights.append(
+                StrategicInsight(
+                    insight=f"Feature '{top_feat}' appears frequently in successful factors",
+                    evidence=f"Present in {top_count}/{len(admitted)} admitted factors",
+                    batch_source=batch_number,
+                )
+            )
 
     # Insight: non-linear vs linear
     nonlinear_ops = {"IfElse", "Skew", "Kurt", "Square", "Pow", "Log", "Or", "And"}
     admitted_nonlinear = sum(
-        1 for c in admitted
+        1
+        for c in admitted
         if any(op in nonlinear_ops for op in _extract_operators(c.get("formula", "")))
     )
     if len(admitted) >= 3 and admitted_nonlinear / len(admitted) > 0.6:
-        insights.append(StrategicInsight(
-            insight="Non-linear transformations outperform linear ones in current regime",
-            evidence=f"{admitted_nonlinear}/{len(admitted)} admitted factors use non-linear operators",
-            batch_source=batch_number,
-        ))
+        insights.append(
+            StrategicInsight(
+                insight="Non-linear transformations outperform linear ones in current regime",
+                evidence=f"{admitted_nonlinear}/{len(admitted)} admitted factors use non-linear operators",
+                batch_source=batch_number,
+            )
+        )
 
     return insights
 
@@ -321,6 +333,7 @@ def _derive_insights(
 # ---------------------------------------------------------------------------
 # Public API: Memory Formation
 # ---------------------------------------------------------------------------
+
 
 def form_memory(
     memory: ExperienceMemory,
@@ -387,7 +400,8 @@ def form_memory(
         domain_saturation=_compute_domain_saturation(
             memory.state.domain_saturation, admitted, rejected
         ),
-        admission_log=memory.state.admission_log + [
+        admission_log=memory.state.admission_log
+        + [
             {
                 "batch": batch_number,
                 "admitted": len(admitted),

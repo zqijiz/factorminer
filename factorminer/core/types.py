@@ -13,8 +13,10 @@ from enum import Enum, auto
 # Enumerations
 # ---------------------------------------------------------------------------
 
+
 class OperatorType(Enum):
     """High-level category for every operator."""
+
     ARITHMETIC = auto()
     STATISTICAL = auto()
     TIMESERIES = auto()
@@ -33,6 +35,7 @@ class SignatureType(Enum):
     ELEMENT_WISE – pointwise on array(s), no window or cross-section logic
     REDUCE_TIME – collapses the time axis (e.g. cumulative sum)
     """
+
     TIME_SERIES_TO_TIME_SERIES = auto()
     CROSS_SECTION_TO_CROSS_SECTION = auto()
     ELEMENT_WISE = auto()
@@ -42,6 +45,7 @@ class SignatureType(Enum):
 # ---------------------------------------------------------------------------
 # Operator specification
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class OperatorSpec:
@@ -66,6 +70,7 @@ class OperatorSpec:
     description : str
         Short human-readable description.
     """
+
     name: str
     arity: int
     category: OperatorType
@@ -97,6 +102,7 @@ FEATURE_SET: frozenset = frozenset(FEATURES)
 # ---------------------------------------------------------------------------
 # Complete operator library  (60+ operators)
 # ---------------------------------------------------------------------------
+
 
 def _window_params(
     default: int = 10,
@@ -168,11 +174,16 @@ def _build_operator_registry() -> dict[str, OperatorSpec]:
     _reg("Pow", 2, A, EW, desc="x^y")
     _reg("Max", 2, A, EW, desc="element-wise max(x, y)")
     _reg("Min", 2, A, EW, desc="element-wise min(x, y)")
-    _reg("Clip", 1, A, EW,
-         param_names=("lower", "upper"),
-         param_defaults={"lower": -3.0, "upper": 3.0},
-         param_ranges={"lower": (-10.0, 10.0), "upper": (-10.0, 10.0)},
-         desc="clip(x, lower, upper)")
+    _reg(
+        "Clip",
+        1,
+        A,
+        EW,
+        param_names=("lower", "upper"),
+        param_defaults={"lower": -3.0, "upper": 3.0},
+        param_ranges={"lower": (-10.0, 10.0), "upper": (-10.0, 10.0)},
+        desc="clip(x, lower, upper)",
+    )
     _reg("Inv", 1, A, EW, desc="1 / x (safe)")
 
     # ---- Statistical (rolling window) -------------------------------------
@@ -189,11 +200,16 @@ def _build_operator_registry() -> dict[str, OperatorSpec]:
     _reg("TsArgMax", 1, S, TS, *wp(10), desc="rolling argmax")
     _reg("TsArgMin", 1, S, TS, *wp(10), desc="rolling argmin")
     _reg("TsRank", 1, S, TS, *wp(10), desc="rolling rank of latest value")
-    _reg("Quantile", 1, S, TS,
-         param_names=("window", "q"),
-         param_defaults={"window": 10.0, "q": 0.5},
-         param_ranges={"window": (2.0, 250.0), "q": (0.0, 1.0)},
-         desc="rolling quantile")
+    _reg(
+        "Quantile",
+        1,
+        S,
+        TS,
+        param_names=("window", "q"),
+        param_defaults={"window": 10.0, "q": 0.5},
+        param_ranges={"window": (2.0, 250.0), "q": (0.0, 1.0)},
+        desc="rolling quantile",
+    )
     _reg("CountNaN", 1, S, TS, *wp(10), desc="rolling count of NaN")
     _reg("CountNotNaN", 1, S, TS, *wp(10), desc="rolling count of non-NaN")
 
@@ -226,11 +242,16 @@ def _build_operator_registry() -> dict[str, OperatorSpec]:
     _reg("CsDemean", 1, X, CS, desc="x - cross-sectional mean")
     _reg("CsScale", 1, X, CS, desc="scale to unit L1 norm cross-sectionally")
     _reg("CsNeutralize", 1, X, CS, desc="industry-neutralize")
-    _reg("CsQuantile", 1, X, CS,
-         param_names=("n_bins",),
-         param_defaults={"n_bins": 5.0},
-         param_ranges={"n_bins": (2.0, 20.0)},
-         desc="cross-sectional quantile bin")
+    _reg(
+        "CsQuantile",
+        1,
+        X,
+        CS,
+        param_names=("n_bins",),
+        param_defaults={"n_bins": 5.0},
+        param_ranges={"n_bins": (2.0, 20.0)},
+        desc="cross-sectional quantile bin",
+    )
 
     # ---- Regression -------------------------------------------------------
     _reg("TsLinReg", 1, R, TS, *wp(20), desc="rolling linear-regression fitted value")
@@ -260,8 +281,5 @@ OPERATOR_REGISTRY: dict[str, OperatorSpec] = _build_operator_registry()
 def get_operator(name: str) -> OperatorSpec:
     """Look up an operator by name, raising ``KeyError`` if unknown."""
     if name not in OPERATOR_REGISTRY:
-        raise KeyError(
-            f"Unknown operator '{name}'. "
-            f"Available: {sorted(OPERATOR_REGISTRY.keys())}"
-        )
+        raise KeyError(f"Unknown operator '{name}'. Available: {sorted(OPERATOR_REGISTRY.keys())}")
     return OPERATOR_REGISTRY[name]

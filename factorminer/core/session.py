@@ -148,15 +148,9 @@ class MiningSession:
 
     def get_summary(self) -> dict[str, Any]:
         """Session summary statistics."""
-        total_candidates = sum(
-            it.get("candidates", 0) for it in self.iterations
-        )
-        total_admitted = sum(
-            it.get("admitted", 0) for it in self.iterations
-        )
-        total_replaced = sum(
-            it.get("replaced", 0) for it in self.iterations
-        )
+        total_candidates = sum(it.get("candidates", 0) for it in self.iterations)
+        total_admitted = sum(it.get("admitted", 0) for it in self.iterations)
+        total_replaced = sum(it.get("replaced", 0) for it in self.iterations)
 
         # Compute elapsed time
         elapsed = 0.0

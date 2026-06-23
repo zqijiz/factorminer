@@ -13,6 +13,7 @@ from factorminer.data.mock_data import MockConfig, generate_mock_data, generate_
 # Mock data generation
 # ---------------------------------------------------------------------------
 
+
 class TestMockDataGeneration:
     """Test the synthetic market data generator."""
 
@@ -53,6 +54,7 @@ class TestMockDataGeneration:
 # OHLC consistency
 # ---------------------------------------------------------------------------
 
+
 class TestOHLCConsistency:
     """Test that generated data maintains OHLC invariants."""
 
@@ -87,6 +89,7 @@ class TestOHLCConsistency:
 # Trading halts
 # ---------------------------------------------------------------------------
 
+
 class TestHaltGeneration:
     """Test synthetic data with trading halts."""
 
@@ -112,6 +115,7 @@ class TestHaltGeneration:
 # Different frequencies
 # ---------------------------------------------------------------------------
 
+
 class TestFrequencies:
     """Test data generation at different frequencies."""
 
@@ -126,6 +130,7 @@ class TestFrequencies:
 # ---------------------------------------------------------------------------
 # MockConfig defaults
 # ---------------------------------------------------------------------------
+
 
 class TestMockConfig:
     """Test MockConfig defaults and overrides."""
@@ -152,6 +157,7 @@ class TestMockConfig:
 # ---------------------------------------------------------------------------
 # Feature computation (basic checks with preprocessor if available)
 # ---------------------------------------------------------------------------
+
 
 class TestFeatureComputation:
     """Test derived feature computation."""
@@ -182,12 +188,14 @@ class TestFeatureComputation:
 # Tensor builder integration
 # ---------------------------------------------------------------------------
 
+
 class TestTensorBuilder:
     """Test tensor construction from mock data (if modules available)."""
 
     def test_build_pipeline_import(self):
         """Verify we can import the tensor builder."""
         from factorminer.data.tensor_builder import TensorConfig
+
         config = TensorConfig()
         assert config.backend == "numpy"
         assert "close" in config.features
@@ -195,12 +203,14 @@ class TestTensorBuilder:
     def test_temporal_split_import(self):
         """Verify temporal_split is importable."""
         from factorminer.data.tensor_builder import temporal_split
+
         assert callable(temporal_split)
 
 
 # ---------------------------------------------------------------------------
 # Loader schema compatibility
 # ---------------------------------------------------------------------------
+
 
 class TestLoaderSchemaCompatibility:
     """Test common market-data schema variants accepted by the loader."""
@@ -209,9 +219,7 @@ class TestLoaderSchemaCompatibility:
         path = tmp_path / "alias_data.csv"
         df = pd.DataFrame(
             {
-                "timestamp": pd.to_datetime(
-                    ["2025-01-01 09:30:00", "2025-01-01 09:40:00"]
-                ),
+                "timestamp": pd.to_datetime(["2025-01-01 09:30:00", "2025-01-01 09:40:00"]),
                 "code": ["600519.SH", "600519.SH"],
                 "open": [10.0, 10.2],
                 "high": [10.3, 10.4],

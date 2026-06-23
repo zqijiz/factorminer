@@ -11,7 +11,6 @@ import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.stats import rankdata
 
 from factorminer.evaluation.metrics import (
     compute_ic,
@@ -25,6 +24,7 @@ from factorminer.evaluation.metrics import (
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _rolling_mean(arr: np.ndarray, window: int) -> np.ndarray:
     """Compute rolling mean with edge handling."""
@@ -63,8 +63,8 @@ def _compute_daily_turnover(signals: np.ndarray) -> np.ndarray:
         if n < 5:
             continue
         # Rank-based positions
-        prev_ranks = rankdata(prev[valid]) / n
-        curr_ranks = rankdata(curr[valid]) / n
+        prev_ranks = pd.Series(prev[valid]).rank(method="average", na_option="keep").to_numpy() / n
+        curr_ranks = pd.Series(curr[valid]).rank(method="average", na_option="keep").to_numpy() / n
         turnovers[t - 1] = float(np.mean(np.abs(curr_ranks - prev_ranks)))
 
     return turnovers
@@ -73,6 +73,7 @@ def _compute_daily_turnover(signals: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # FactorTearSheet
 # ---------------------------------------------------------------------------
+
 
 class FactorTearSheet:
     """Generate comprehensive evaluation report for a single factor.
@@ -132,14 +133,16 @@ class FactorTearSheet:
         Dict[str, float]
             Dictionary of computed metrics.
         """
-        plt.rcParams.update({
-            "figure.facecolor": "white",
-            "axes.facecolor": "white",
-            "axes.grid": True,
-            "grid.alpha": 0.3,
-            "grid.linestyle": "--",
-            "figure.dpi": 150,
-        })
+        plt.rcParams.update(
+            {
+                "figure.facecolor": "white",
+                "axes.facecolor": "white",
+                "axes.grid": True,
+                "grid.alpha": 0.3,
+                "grid.linestyle": "--",
+                "figure.dpi": 150,
+            }
+        )
 
         M, T = signals.shape
         ic_series = compute_ic(signals, returns)
@@ -185,10 +188,8 @@ class FactorTearSheet:
                 for q in range(1, n_quantiles + 1):
                     quintile_ts[q].append(0.0)
                 continue
-            ranks = rankdata(s[valid_mask])
-            q_labels = np.clip(
-                np.ceil(ranks / n * n_quantiles).astype(int), 1, n_quantiles
-            )
+            ranks = pd.Series(s[valid_mask]).rank(method="average", na_option="keep").to_numpy()
+            q_labels = np.clip(np.ceil(ranks / n * n_quantiles).astype(int), 1, n_quantiles)
             r_valid = r[valid_mask]
             for q in range(1, n_quantiles + 1):
                 mask_q = q_labels == q
@@ -205,7 +206,9 @@ class FactorTearSheet:
         # Suptitle
         fig.suptitle(
             f"Factor #{factor_id}: {factor_name}\n{formula[:100]}{'...' if len(formula) > 100 else ''}",
-            fontsize=13, fontweight="bold", y=0.98,
+            fontsize=13,
+            fontweight="bold",
+            y=0.98,
         )
 
         # (a) IC time-series
@@ -213,8 +216,9 @@ class FactorTearSheet:
         x = np.arange(T)
         colors_ic = np.where(ic_clean >= 0, self.IC_BAR_POS, self.IC_BAR_NEG)
         ax_a.bar(x, ic_clean, color=colors_ic, alpha=0.5, width=1.0, edgecolor="none")
-        ax_a.axhline(y=ic_mean, color="#FF6F00", linestyle="--", linewidth=1.0,
-                     label=f"Mean = {ic_mean:.4f}")
+        ax_a.axhline(
+            y=ic_mean, color="#FF6F00", linestyle="--", linewidth=1.0, label=f"Mean = {ic_mean:.4f}"
+        )
         ax_a.axhline(y=0, color="black", linewidth=0.4)
         ax_a.set_title("(a) Daily Rank IC", fontsize=10)
         ax_a.set_ylabel("IC")
@@ -224,18 +228,37 @@ class FactorTearSheet:
         # (b) IC distribution
         ax_b = fig.add_subplot(gs[0, 1])
         if len(valid_ic) > 0:
-            ax_b.hist(valid_ic, bins=50, color=self.ROLLING_COLOR, alpha=0.7,
-                      edgecolor="white", linewidth=0.5, density=True)
-            ax_b.axvline(x=ic_mean, color="#FF6F00", linestyle="--", linewidth=1.2,
-                         label=f"Mean = {ic_mean:.4f}")
+            ax_b.hist(
+                valid_ic,
+                bins=50,
+                color=self.ROLLING_COLOR,
+                alpha=0.7,
+                edgecolor="white",
+                linewidth=0.5,
+                density=True,
+            )
+            ax_b.axvline(
+                x=ic_mean,
+                color="#FF6F00",
+                linestyle="--",
+                linewidth=1.2,
+                label=f"Mean = {ic_mean:.4f}",
+            )
             ax_b.axvline(x=0, color="black", linewidth=0.4)
         ax_b.set_title("(b) Rank IC Distribution", fontsize=10)
         ax_b.set_xlabel("IC")
         ax_b.set_ylabel("Density")
         stats_text = f"Mean={ic_mean:.4f}\nICIR={icir:.3f}\nWin={win_rate:.1%}"
-        ax_b.text(0.97, 0.97, stats_text, transform=ax_b.transAxes,
-                  ha="right", va="top", fontsize=8,
-                  bbox=dict(boxstyle="round,pad=0.3", facecolor="wheat", alpha=0.5))
+        ax_b.text(
+            0.97,
+            0.97,
+            stats_text,
+            transform=ax_b.transAxes,
+            ha="right",
+            va="top",
+            fontsize=8,
+            bbox=dict(boxstyle="round,pad=0.3", facecolor="wheat", alpha=0.5),
+        )
         ax_b.legend(fontsize=8, loc="upper left")
 
         # (c) 21-day rolling IC
@@ -243,8 +266,9 @@ class FactorTearSheet:
         ax_c.plot(x, rolling_ic, color=self.ROLLING_COLOR, linewidth=1.0)
         ax_c.fill_between(x, rolling_ic, alpha=0.15, color=self.ROLLING_COLOR)
         ax_c.axhline(y=0, color="black", linewidth=0.4)
-        ax_c.axhline(y=ic_mean, color="#FF6F00", linestyle="--", linewidth=0.8,
-                     label=f"Mean = {ic_mean:.4f}")
+        ax_c.axhline(
+            y=ic_mean, color="#FF6F00", linestyle="--", linewidth=0.8, label=f"Mean = {ic_mean:.4f}"
+        )
         ax_c.set_title("(c) 21-Day Rolling IC", fontsize=10)
         ax_c.set_ylabel("Rolling IC")
         ax_c.legend(fontsize=8, loc="upper left")
@@ -268,9 +292,14 @@ class FactorTearSheet:
         bars = ax_e.bar(q_labels_list, q_vals, color=q_colors, edgecolor="white", linewidth=0.8)
         for bar, val in zip(bars, q_vals):
             y_pos = bar.get_height()
-            ax_e.text(bar.get_x() + bar.get_width() / 2, y_pos,
-                      f"{val:.4f}", ha="center",
-                      va="bottom" if y_pos >= 0 else "top", fontsize=8)
+            ax_e.text(
+                bar.get_x() + bar.get_width() / 2,
+                y_pos,
+                f"{val:.4f}",
+                ha="center",
+                va="bottom" if y_pos >= 0 else "top",
+                fontsize=8,
+            )
         ax_e.axhline(y=0, color="black", linewidth=0.4)
         ls = quintile.get("long_short", 0.0)
         mono = quintile.get("monotonicity", 0.0)
@@ -282,8 +311,7 @@ class FactorTearSheet:
         q_palette = plt.cm.RdYlGn(np.linspace(0.1, 0.9, n_quantiles))
         for i, q in enumerate(range(1, n_quantiles + 1)):
             key = f"Q{q}"
-            ax_f.plot(quintile_cumulative[key], color=q_palette[i],
-                      linewidth=1.1, label=key)
+            ax_f.plot(quintile_cumulative[key], color=q_palette[i], linewidth=1.1, label=key)
         ax_f.axhline(y=0, color="black", linewidth=0.4)
         ax_f.set_title("(f) Cumulative Quintile Returns", fontsize=10)
         ax_f.set_ylabel("Cumulative Return")
@@ -301,16 +329,35 @@ class FactorTearSheet:
             # Clip to 1st/99th percentile for cleaner visualization
             lo, hi = np.percentile(flat_signals, [1, 99])
             clipped = flat_signals[(flat_signals >= lo) & (flat_signals <= hi)]
-            ax_g.hist(clipped, bins=80, color="#7E57C2", alpha=0.7,
-                      edgecolor="white", linewidth=0.3, density=True)
+            ax_g.hist(
+                clipped,
+                bins=80,
+                color="#7E57C2",
+                alpha=0.7,
+                edgecolor="white",
+                linewidth=0.3,
+                density=True,
+            )
             mean_sig = float(np.mean(flat_signals))
             std_sig = float(np.std(flat_signals))
-            ax_g.axvline(x=mean_sig, color="#FF6F00", linestyle="--", linewidth=1.0,
-                         label=f"Mean={mean_sig:.4f}")
+            ax_g.axvline(
+                x=mean_sig,
+                color="#FF6F00",
+                linestyle="--",
+                linewidth=1.0,
+                label=f"Mean={mean_sig:.4f}",
+            )
             stats_text_g = f"Std={std_sig:.4f}\nN={len(flat_signals):,}"
-            ax_g.text(0.97, 0.97, stats_text_g, transform=ax_g.transAxes,
-                      ha="right", va="top", fontsize=8,
-                      bbox=dict(boxstyle="round,pad=0.3", facecolor="wheat", alpha=0.5))
+            ax_g.text(
+                0.97,
+                0.97,
+                stats_text_g,
+                transform=ax_g.transAxes,
+                ha="right",
+                va="top",
+                fontsize=8,
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="wheat", alpha=0.5),
+            )
         ax_g.set_title("(g) Factor Value Distribution", fontsize=10)
         ax_g.set_xlabel("Factor Value")
         ax_g.set_ylabel("Density")
@@ -321,19 +368,31 @@ class FactorTearSheet:
         valid_turnover = daily_turnover[~np.isnan(daily_turnover)]
         if len(valid_turnover) > 0:
             t_x = np.arange(len(daily_turnover))
-            ax_h.bar(t_x, np.where(np.isnan(daily_turnover), 0, daily_turnover),
-                     color=self.TURNOVER_COLOR, alpha=0.5, width=1.0, edgecolor="none")
+            ax_h.bar(
+                t_x,
+                np.where(np.isnan(daily_turnover), 0, daily_turnover),
+                color=self.TURNOVER_COLOR,
+                alpha=0.5,
+                width=1.0,
+                edgecolor="none",
+            )
             avg_to = float(np.mean(valid_turnover))
-            ax_h.axhline(y=avg_to, color="#D32F2F", linestyle="--", linewidth=1.0,
-                         label=f"Avg = {avg_to:.4f}")
+            ax_h.axhline(
+                y=avg_to,
+                color="#D32F2F",
+                linestyle="--",
+                linewidth=1.0,
+                label=f"Avg = {avg_to:.4f}",
+            )
             ax_h.legend(fontsize=8, loc="upper right")
         ax_h.set_title("(h) Daily Turnover", fontsize=10)
         ax_h.set_ylabel("Turnover")
         ax_h.set_xlabel("Period")
 
         # Metrics table at the bottom
-        metrics_ls_cum = float(np.sum([quintile_ts[n_quantiles][t] - quintile_ts[1][t]
-                                       for t in range(T)]))
+        metrics_ls_cum = float(
+            np.sum([quintile_ts[n_quantiles][t] - quintile_ts[1][t] for t in range(T)])
+        )
         metrics["long_short_cumulative"] = metrics_ls_cum
 
         fig.tight_layout(rect=[0, 0, 1, 0.96])
@@ -366,19 +425,21 @@ class FactorTearSheet:
 
         rows = []
         for f in factors:
-            rows.append({
-                "ID": f.get("id", ""),
-                "Name": f.get("name", ""),
-                "Formula": str(f.get("formula", ""))[:60],
-                "IC Mean": f.get("ic_mean", 0.0),
-                "ICIR": f.get("icir", 0.0),
-                "IC Win Rate": f.get("ic_win_rate", 0.0),
-                "Q1 Return": f.get("Q1_return", 0.0),
-                "Q5 Return": f.get("Q5_return", 0.0),
-                "L-S Return": f.get("long_short", 0.0),
-                "Monotonicity": f.get("monotonicity", 0.0),
-                "Avg Turnover": f.get("avg_turnover", 0.0),
-            })
+            rows.append(
+                {
+                    "ID": f.get("id", ""),
+                    "Name": f.get("name", ""),
+                    "Formula": str(f.get("formula", ""))[:60],
+                    "IC Mean": f.get("ic_mean", 0.0),
+                    "ICIR": f.get("icir", 0.0),
+                    "IC Win Rate": f.get("ic_win_rate", 0.0),
+                    "Q1 Return": f.get("Q1_return", 0.0),
+                    "Q5 Return": f.get("Q5_return", 0.0),
+                    "L-S Return": f.get("long_short", 0.0),
+                    "Monotonicity": f.get("monotonicity", 0.0),
+                    "Avg Turnover": f.get("avg_turnover", 0.0),
+                }
+            )
 
         df = pd.DataFrame(rows)
         df = df.sort_values("IC Mean", ascending=False).reset_index(drop=True)

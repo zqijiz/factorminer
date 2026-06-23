@@ -29,10 +29,21 @@ from factorminer.core.expression_tree import (
 )
 
 # Arithmetic operator names that map directly to SymPy math.
-_ALGEBRAIC_OPS = frozenset({
-    "Add", "Sub", "Mul", "Div", "Neg", "Abs",
-    "Square", "Sqrt", "Log", "Pow", "SignedPower",
-})
+_ALGEBRAIC_OPS = frozenset(
+    {
+        "Add",
+        "Sub",
+        "Mul",
+        "Div",
+        "Neg",
+        "Abs",
+        "Square",
+        "Sqrt",
+        "Log",
+        "Pow",
+        "SignedPower",
+    }
+)
 
 
 class FormulaCanonicalizer:
@@ -142,9 +153,7 @@ class FormulaCanonicalizer:
 
         if isinstance(node, OperatorNode):
             children_sympy = [self._tree_to_sympy(c) for c in node.children]
-            return self._map_operator(
-                node.operator.name, children_sympy, node.params
-            )
+            return self._map_operator(node.operator.name, children_sympy, node.params)
 
         raise TypeError(f"Unexpected node type: {type(node).__name__}")
 

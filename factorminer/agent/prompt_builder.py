@@ -48,7 +48,7 @@ def _format_operator_table() -> str:
                     range_str = f"[{lo}-{hi}]" if lo is not None else ""
                     parts.append(f"{pname}={default}{range_str}")
                 params_str = f"  params: {', '.join(parts)}"
-            arity_args = ", ".join([f"expr{i+1}" for i in range(spec.arity)])
+            arity_args = ", ".join([f"expr{i + 1}" for i in range(spec.arity)])
             if spec.param_names:
                 arity_args += ", " + ", ".join(spec.param_names)
             lines.append(f"- {spec.name}({arity_args}): {spec.description}{params_str}")
@@ -129,6 +129,7 @@ Your goal is to generate novel, predictive factor expressions using a tree-struc
 # ---------------------------------------------------------------------------
 # PromptBuilder
 # ---------------------------------------------------------------------------
+
 
 def normalize_factor_references(entries: list[Any] | None) -> list[str]:
     """Convert mixed factor metadata into prompt-safe string references."""
@@ -211,33 +212,25 @@ class PromptBuilder:
         sections: list[str] = []
 
         # --- Task directive ---
-        sections.append(
-            f"Generate exactly {batch_size} novel, diverse alpha factor candidates."
-        )
+        sections.append(f"Generate exactly {batch_size} novel, diverse alpha factor candidates.")
 
         # --- Library status ---
         lib_size = library_state.get("size", 0)
         target = library_state.get("target_size", 110)
         sections.append(
-            f"\n## CURRENT LIBRARY STATUS\n"
-            f"Library size: {lib_size} / {target} factors."
+            f"\n## CURRENT LIBRARY STATUS\nLibrary size: {lib_size} / {target} factors."
         )
 
-        recent = normalize_factor_references(
-            library_state.get("recent_admissions", [])
-        )
+        recent = normalize_factor_references(library_state.get("recent_admissions", []))
         if recent:
             sections.append(
-                "Recently admitted factors:\n"
-                + "\n".join(f"  - {f}" for f in recent[-10:])
+                "Recently admitted factors:\n" + "\n".join(f"  - {f}" for f in recent[-10:])
             )
 
         saturation = library_state.get("domain_saturation", {})
         if saturation:
             sat_lines = [f"  {domain}: {pct:.0%} saturated" for domain, pct in saturation.items()]
-            sections.append(
-                "Domain saturation:\n" + "\n".join(sat_lines)
-            )
+            sections.append("Domain saturation:\n" + "\n".join(sat_lines))
 
         # --- Memory signal: recommended directions ---
         rec_dirs = memory_signal.get("recommended_directions", [])
@@ -259,16 +252,12 @@ class PromptBuilder:
         insights = memory_signal.get("strategic_insights", [])
         if insights:
             sections.append(
-                "\n## STRATEGIC INSIGHTS\n"
-                + "\n".join(f"  Note: {ins}" for ins in insights)
+                "\n## STRATEGIC INSIGHTS\n" + "\n".join(f"  Note: {ins}" for ins in insights)
             )
 
         helix_prompt_text = memory_signal.get("prompt_text", "").strip()
         if helix_prompt_text:
-            sections.append(
-                "\n## HELIX RETRIEVAL SUMMARY\n"
-                f"{helix_prompt_text}"
-            )
+            sections.append(f"\n## HELIX RETRIEVAL SUMMARY\n{helix_prompt_text}")
 
         complementary_patterns = memory_signal.get("complementary_patterns", [])
         if complementary_patterns:
@@ -295,9 +284,7 @@ class PromptBuilder:
         if semantic_gaps:
             sections.append(
                 "\n## SEMANTIC GAPS\n"
-                + "\n".join(
-                    f"  - Underused but promising: {gap}" for gap in semantic_gaps
-                )
+                + "\n".join(f"  - Underused but promising: {gap}" for gap in semantic_gaps)
             )
 
         # --- Recent rejection reasons ---
@@ -309,8 +296,7 @@ class PromptBuilder:
                 reason = rej.get("reason", "unknown")
                 rej_lines.append(f"  - {name}: rejected because {reason}")
             sections.append(
-                "\n## RECENT REJECTIONS (learn from these failures)\n"
-                + "\n".join(rej_lines)
+                "\n## RECENT REJECTIONS (learn from these failures)\n" + "\n".join(rej_lines)
             )
 
         # --- Orthogonality directive ---
@@ -344,6 +330,7 @@ class PromptBuilder:
 # ---------------------------------------------------------------------------
 # New specialist/critic/debate prompt builder functions
 # ---------------------------------------------------------------------------
+
 
 def build_specialist_prompt(
     specialist_name: str,
@@ -412,20 +399,14 @@ def build_specialist_prompt(
 
     # Regime context
     if regime_context:
-        sections.append(
-            f"\n## CURRENT MARKET REGIME\n{regime_context}"
-        )
+        sections.append(f"\n## CURRENT MARKET REGIME\n{regime_context}")
 
     # Library state
     lib_size = library_diagnostics.get("size", 0)
     target = library_diagnostics.get("target_size", 110)
-    sections.append(
-        f"\n## LIBRARY STATUS\nCurrent: {lib_size}/{target} factors."
-    )
+    sections.append(f"\n## LIBRARY STATUS\nCurrent: {lib_size}/{target} factors.")
 
-    recent = normalize_factor_references(
-        library_diagnostics.get("recent_admissions", [])
-    )
+    recent = normalize_factor_references(library_diagnostics.get("recent_admissions", []))
     if recent:
         sections.append(
             "Recently admitted (avoid similar patterns):\n"
@@ -434,32 +415,21 @@ def build_specialist_prompt(
 
     saturation = library_diagnostics.get("domain_saturation", {})
     if saturation:
-        sat_lines = [
-            f"  {d}: {p:.0%} saturated" for d, p in saturation.items()
-        ]
+        sat_lines = [f"  {d}: {p:.0%} saturated" for d, p in saturation.items()]
         sections.append("Domain saturation:\n" + "\n".join(sat_lines))
 
     # Memory signal injections
     rec_dirs = memory_signal.get("recommended_directions", [])
     if rec_dirs:
-        sections.append(
-            "\n## RECOMMENDED DIRECTIONS\n"
-            + "\n".join(f"  * {d}" for d in rec_dirs)
-        )
+        sections.append("\n## RECOMMENDED DIRECTIONS\n" + "\n".join(f"  * {d}" for d in rec_dirs))
 
     forbidden = memory_signal.get("forbidden_directions", [])
     if forbidden:
-        sections.append(
-            "\n## FORBIDDEN DIRECTIONS\n"
-            + "\n".join(f"  X {d}" for d in forbidden)
-        )
+        sections.append("\n## FORBIDDEN DIRECTIONS\n" + "\n".join(f"  X {d}" for d in forbidden))
 
     insights = memory_signal.get("strategic_insights", [])
     if insights:
-        sections.append(
-            "\n## STRATEGIC INSIGHTS\n"
-            + "\n".join(f"  - {ins}" for ins in insights)
-        )
+        sections.append("\n## STRATEGIC INSIGHTS\n" + "\n".join(f"  - {ins}" for ins in insights))
 
     helix_text = memory_signal.get("prompt_text", "").strip()
     if helix_text:
@@ -474,10 +444,7 @@ def build_specialist_prompt(
 
     warn = memory_signal.get("conflict_warnings", [])
     if warn:
-        sections.append(
-            "\n## SATURATION WARNINGS\n"
-            + "\n".join(f"  ! {w}" for w in warn)
-        )
+        sections.append("\n## SATURATION WARNINGS\n" + "\n".join(f"  ! {w}" for w in warn))
 
     gaps = memory_signal.get("semantic_gaps", [])
     if gaps:
@@ -507,8 +474,7 @@ def build_specialist_prompt(
     # Avoid patterns
     if avoid_patterns:
         sections.append(
-            "\n## PATTERNS TO AVOID\n"
-            + "\n".join(f"  X {av}" for av in avoid_patterns)
+            "\n## PATTERNS TO AVOID\n" + "\n".join(f"  X {av}" for av in avoid_patterns)
         )
 
     # Few-shot patterns from memory
@@ -587,9 +553,7 @@ def build_critic_scoring_prompt(
         name = c.get("name", "unknown")
         formula = c.get("formula", "")
         specialist = c.get("specialist", "unknown")
-        sections.append(
-            f"  [{specialist}] {name}: {formula}"
-        )
+        sections.append(f"  [{specialist}] {name}: {formula}")
 
     sections.append(
         "\n## SCORING CRITERIA\n"
@@ -646,7 +610,7 @@ def build_debate_synthesis_prompt(
         all_proposals,
         key=lambda p: score_map.get(p.get("name", ""), 0.0),
         reverse=True,
-    )[:top_k * 2]  # take 2x top_k for synthesis
+    )[: top_k * 2]  # take 2x top_k for synthesis
 
     sections: list[str] = []
     sections.append(
@@ -663,9 +627,7 @@ def build_debate_synthesis_prompt(
         formula = p.get("formula", "?")
         specialist = p.get("specialist", "?")
         score = score_map.get(name, 0.5)
-        sections.append(
-            f"  [{specialist}, score={score:.2f}] {name}: {formula}"
-        )
+        sections.append(f"  [{specialist}, score={score:.2f}] {name}: {formula}")
 
     sections.append(
         f"\n## SELECTION CRITERIA\n"

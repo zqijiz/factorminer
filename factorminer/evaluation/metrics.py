@@ -8,11 +8,13 @@ factor statistics used by the validation pipeline.
 from __future__ import annotations
 
 import numpy as np
-from scipy.stats import rankdata
+import pandas as pd
+import pandas as pd
 
 # ---------------------------------------------------------------------------
 # Information Coefficient
 # ---------------------------------------------------------------------------
+
 
 def compute_ic(signals: np.ndarray, returns: np.ndarray) -> np.ndarray:
     """Compute IC_t = Corr_rank(s_t, r_{t+1}) for each time period.
@@ -42,12 +44,12 @@ def compute_ic(signals: np.ndarray, returns: np.ndarray) -> np.ndarray:
         n = valid.sum()
         if n < 5:
             continue
-        rs = rankdata(s[valid])
-        rr = rankdata(r[valid])
+        rs = pd.Series(s[valid]).rank(method="average", na_option="keep").to_numpy()
+        rr = pd.Series(r[valid]).rank(method="average", na_option="keep").to_numpy()
         # Pearson correlation on ranks = Spearman
         rs_m = rs - rs.mean()
         rr_m = rr - rr.mean()
-        denom = np.sqrt((rs_m ** 2).sum() * (rr_m ** 2).sum())
+        denom = np.sqrt((rs_m**2).sum() * (rr_m**2).sum())
         if denom < 1e-12:
             ic_series[t] = 0.0
         else:
@@ -87,11 +89,11 @@ def compute_ic_vectorized(signals: np.ndarray, returns: np.ndarray) -> np.ndarra
         n = valid.sum()
         if n < 5:
             continue
-        rs = rankdata(sig_filled[valid, t])
-        rr = rankdata(ret_filled[valid, t])
+        rs = pd.Series(sig_filled[valid, t]).rank(method="average", na_option="keep").to_numpy()
+        rr = pd.Series(ret_filled[valid, t]).rank(method="average", na_option="keep").to_numpy()
         rs_m = rs - rs.mean()
         rr_m = rr - rr.mean()
-        denom = np.sqrt((rs_m ** 2).sum() * (rr_m ** 2).sum())
+        denom = np.sqrt((rs_m**2).sum() * (rr_m**2).sum())
         ic_series[t] = (rs_m * rr_m).sum() / denom if denom > 1e-12 else 0.0
 
     return ic_series
@@ -100,6 +102,7 @@ def compute_ic_vectorized(signals: np.ndarray, returns: np.ndarray) -> np.ndarra
 # ---------------------------------------------------------------------------
 # IC-derived statistics
 # ---------------------------------------------------------------------------
+
 
 def compute_icir(ic_series: np.ndarray) -> float:
     """Compute ICIR = mean(IC) / std(IC).
@@ -162,6 +165,7 @@ def compute_ic_win_rate(ic_series: np.ndarray) -> float:
 # Cross-factor correlation
 # ---------------------------------------------------------------------------
 
+
 def compute_pairwise_correlation(
     signals_a: np.ndarray,
     signals_b: np.ndarray,
@@ -190,11 +194,11 @@ def compute_pairwise_correlation(
         n = valid.sum()
         if n < 5:
             continue
-        ra = rankdata(a[valid])
-        rb = rankdata(b[valid])
+        ra = pd.Series(a[valid]).rank(method="average", na_option="keep").to_numpy()
+        rb = pd.Series(b[valid]).rank(method="average", na_option="keep").to_numpy()
         ra_m = ra - ra.mean()
         rb_m = rb - rb.mean()
-        denom = np.sqrt((ra_m ** 2).sum() * (rb_m ** 2).sum())
+        denom = np.sqrt((ra_m**2).sum() * (rb_m**2).sum())
         if denom < 1e-12:
             corrs.append(0.0)
         else:
@@ -208,6 +212,7 @@ def compute_pairwise_correlation(
 # ---------------------------------------------------------------------------
 # Quintile analysis
 # ---------------------------------------------------------------------------
+
 
 def compute_quintile_returns(
     signals: np.ndarray,
@@ -243,7 +248,7 @@ def compute_quintile_returns(
         s_valid = s[valid]
         r_valid = r[valid]
         # Assign quintile labels via rank
-        ranks = rankdata(s_valid)
+        ranks = pd.Series(s_valid).rank(method="average", na_option="keep").to_numpy()
         # Map to quintile: ceil(rank / n * n_quantiles), clamped
         q_labels = np.clip(
             np.ceil(ranks / n * n_quantiles).astype(int),
@@ -274,11 +279,11 @@ def compute_quintile_returns(
     if np.std(q_returns) < 1e-12:
         result["monotonicity"] = 0.0
     else:
-        rq = rankdata(q_indices)
-        rr = rankdata(q_returns)
+        rq = pd.Series(q_indices).rank(method="average", na_option="keep").to_numpy()
+        rr = pd.Series(q_returns).rank(method="average", na_option="keep").to_numpy()
         rq_m = rq - rq.mean()
         rr_m = rr - rr.mean()
-        denom = np.sqrt((rq_m ** 2).sum() * (rr_m ** 2).sum())
+        denom = np.sqrt((rq_m**2).sum() * (rr_m**2).sum())
         result["monotonicity"] = float((rq_m * rr_m).sum() / denom) if denom > 1e-12 else 0.0
 
     return result
@@ -287,6 +292,7 @@ def compute_quintile_returns(
 # ---------------------------------------------------------------------------
 # Turnover
 # ---------------------------------------------------------------------------
+
 
 def compute_turnover(signals: np.ndarray, top_fraction: float = 0.2) -> float:
     """Compute average portfolio turnover rate.
@@ -335,6 +341,7 @@ def compute_turnover(signals: np.ndarray, top_fraction: float = 0.2) -> float:
 # ---------------------------------------------------------------------------
 # Comprehensive factor statistics
 # ---------------------------------------------------------------------------
+
 
 def compute_factor_stats(
     signals: np.ndarray,

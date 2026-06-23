@@ -68,8 +68,9 @@ def _infer_format(path: Path) -> FileFormat:
     }
     fmt = mapping.get(suffix)
     if fmt is None:
-        raise ValueError(f"Cannot infer format from extension '{suffix}'. "
-                         f"Supported: {list(mapping.keys())}")
+        raise ValueError(
+            f"Cannot infer format from extension '{suffix}'. Supported: {list(mapping.keys())}"
+        )
     return fmt  # type: ignore[return-value]
 
 
@@ -111,8 +112,7 @@ def _validate_columns(df: pd.DataFrame, path: Path) -> pd.DataFrame:
         rename_map[matched] = req
     if missing:
         raise ValueError(
-            f"File {path} is missing required columns: {missing}. "
-            f"Found: {list(df.columns)}"
+            f"File {path} is missing required columns: {missing}. Found: {list(df.columns)}"
         )
     if rename_map:
         df = df.rename(columns=rename_map)
@@ -182,8 +182,7 @@ def load_market_data(
             logger.info("Filtered to universe %s: %d rows", canon, len(df))
         else:
             logger.warning(
-                "Universe filter '%s' requested but no 'universe' column found; "
-                "filter skipped.",
+                "Universe filter '%s' requested but no 'universe' column found; filter skipped.",
                 canon,
             )
 

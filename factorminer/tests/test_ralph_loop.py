@@ -39,6 +39,7 @@ from factorminer.memory.memory_store import ExperienceMemory
 # Minimal config for tests
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class _TestConfig:
     target_library_size: int = 10
@@ -74,6 +75,7 @@ class _TestConfig:
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def rng():
@@ -120,8 +122,8 @@ def empty_memory():
 # BudgetTracker tests
 # ===========================================================================
 
-class TestBudgetTracker:
 
+class TestBudgetTracker:
     def test_initial_state(self):
         bt = BudgetTracker()
         assert bt.llm_calls == 0
@@ -154,6 +156,7 @@ class TestBudgetTracker:
     def test_exhausted_by_wall_time(self):
         bt = BudgetTracker(max_wall_seconds=0.01)
         import time
+
         time.sleep(0.02)
         assert bt.is_exhausted()
 
@@ -168,8 +171,12 @@ class TestBudgetTracker:
         bt.record_llm_call(10, 20)
         d = bt.to_dict()
         expected_keys = {
-            "llm_calls", "llm_prompt_tokens", "llm_completion_tokens",
-            "total_tokens", "compute_seconds", "wall_elapsed_seconds",
+            "llm_calls",
+            "llm_prompt_tokens",
+            "llm_completion_tokens",
+            "total_tokens",
+            "compute_seconds",
+            "wall_elapsed_seconds",
         }
         assert set(d.keys()) == expected_keys
 
@@ -182,8 +189,8 @@ class TestBudgetTracker:
 # EvaluationResult tests
 # ===========================================================================
 
-class TestEvaluationResult:
 
+class TestEvaluationResult:
     def test_defaults(self):
         r = EvaluationResult(factor_name="test", formula="Neg($close)")
         assert not r.parse_ok
@@ -213,8 +220,8 @@ class TestEvaluationResult:
 # FactorGenerator tests
 # ===========================================================================
 
-class TestFactorGenerator:
 
+class TestFactorGenerator:
     def test_generate_batch(self, mock_provider):
         gen = FactorGenerator(llm_provider=mock_provider)
         candidates = gen.generate_batch(
@@ -275,8 +282,8 @@ class TestFactorGenerator:
 # ValidationPipeline tests
 # ===========================================================================
 
-class TestValidationPipeline:
 
+class TestValidationPipeline:
     @pytest.fixture
     def pipeline(self, synthetic_data, empty_library):
         data_tensor, returns = synthetic_data
@@ -337,14 +344,22 @@ class TestValidationPipeline:
         signals = np.random.RandomState(99).randn(M, T)
 
         r1 = EvaluationResult(
-            factor_name="low_ic", formula="Neg($close)",
-            parse_ok=True, ic_mean=0.05, admitted=True,
-            stage_passed=3, signals=signals.copy(),
+            factor_name="low_ic",
+            formula="Neg($close)",
+            parse_ok=True,
+            ic_mean=0.05,
+            admitted=True,
+            stage_passed=3,
+            signals=signals.copy(),
         )
         r2 = EvaluationResult(
-            factor_name="high_ic", formula="CsRank($close)",
-            parse_ok=True, ic_mean=0.10, admitted=True,
-            stage_passed=3, signals=signals.copy(),
+            factor_name="high_ic",
+            formula="CsRank($close)",
+            parse_ok=True,
+            ic_mean=0.10,
+            admitted=True,
+            stage_passed=3,
+            signals=signals.copy(),
         )
         results = pipeline._deduplicate_batch([r1, r2])
 
@@ -367,14 +382,22 @@ class TestValidationPipeline:
         rng = np.random.RandomState(42)
 
         r1 = EvaluationResult(
-            factor_name="f1", formula="Neg($close)",
-            parse_ok=True, ic_mean=0.05, admitted=True,
-            stage_passed=3, signals=rng.randn(M, T),
+            factor_name="f1",
+            formula="Neg($close)",
+            parse_ok=True,
+            ic_mean=0.05,
+            admitted=True,
+            stage_passed=3,
+            signals=rng.randn(M, T),
         )
         r2 = EvaluationResult(
-            factor_name="f2", formula="CsRank($volume)",
-            parse_ok=True, ic_mean=0.07, admitted=True,
-            stage_passed=3, signals=rng.randn(M, T),
+            factor_name="f2",
+            formula="CsRank($volume)",
+            parse_ok=True,
+            ic_mean=0.07,
+            admitted=True,
+            stage_passed=3,
+            signals=rng.randn(M, T),
         )
         results = pipeline._deduplicate_batch([r1, r2])
         admitted = [r for r in results if r.admitted]
@@ -386,8 +409,8 @@ class TestValidationPipeline:
 # MiningReporter tests
 # ===========================================================================
 
-class TestMiningReporter:
 
+class TestMiningReporter:
     def test_log_batch(self, tmp_dir):
         reporter = MiningReporter(output_dir=tmp_dir)
         reporter.log_batch(1, admitted=3, rejected=7)
@@ -415,8 +438,8 @@ class TestMiningReporter:
 # Category inference tests
 # ===========================================================================
 
-class TestCategoryInference:
 
+class TestCategoryInference:
     def test_momentum(self):
         assert RalphLoop._infer_category("Delta($close, 5)") == "Momentum"
 
@@ -430,9 +453,7 @@ class TestCategoryInference:
         assert RalphLoop._infer_category("Corr($close, $volume, 10)") == "PV-Correlation"
 
     def test_regime_conditional(self):
-        cat = RalphLoop._infer_category(
-            "IfElse(Greater($returns, 0), $volume, Neg($volume))"
-        )
+        cat = RalphLoop._infer_category("IfElse(Greater($returns, 0), $volume, Neg($volume))")
         assert cat == "Regime-Conditional"
 
     def test_regression(self):
@@ -461,8 +482,8 @@ class TestCategoryInference:
 # End-to-end RalphLoop tests
 # ===========================================================================
 
-class TestRalphLoopEndToEnd:
 
+class TestRalphLoopEndToEnd:
     def test_single_iteration(self, test_config, synthetic_data, mock_provider, tmp_dir):
         test_config.max_iterations = 1
         test_config.output_dir = tmp_dir
@@ -618,14 +639,21 @@ class TestRalphLoopEndToEnd:
         M, T = returns.shape
 
         lib = FactorLibrary(
-            correlation_threshold=0.7, ic_threshold=0.02,
+            correlation_threshold=0.7,
+            ic_threshold=0.02,
         )
         # Add one factor
         factor = Factor(
-            id=0, name="seed_factor", formula="Neg($close)",
-            category="test", ic_mean=0.06, icir=1.0,
-            ic_win_rate=0.6, max_correlation=0.0,
-            batch_number=0, signals=rng.normal(0, 1, (M, T)),
+            id=0,
+            name="seed_factor",
+            formula="Neg($close)",
+            category="test",
+            ic_mean=0.06,
+            icir=1.0,
+            ic_win_rate=0.6,
+            max_correlation=0.0,
+            batch_number=0,
+            signals=rng.normal(0, 1, (M, T)),
         )
         lib.admit_factor(factor)
 
@@ -663,11 +691,9 @@ class TestRalphLoopEndToEnd:
 # Session persistence tests
 # ===========================================================================
 
-class TestSessionPersistence:
 
-    def test_save_creates_checkpoint(
-        self, test_config, synthetic_data, mock_provider, tmp_dir
-    ):
+class TestSessionPersistence:
+    def test_save_creates_checkpoint(self, test_config, synthetic_data, mock_provider, tmp_dir):
         test_config.output_dir = tmp_dir
         test_config.max_iterations = 1
         data_tensor, returns = synthetic_data
@@ -689,9 +715,7 @@ class TestSessionPersistence:
         assert "memory.json" in checkpoint_files
         assert "loop_state.json" in checkpoint_files
 
-    def test_load_restores_iteration(
-        self, test_config, synthetic_data, mock_provider, tmp_dir
-    ):
+    def test_load_restores_iteration(self, test_config, synthetic_data, mock_provider, tmp_dir):
         test_config.output_dir = tmp_dir
         data_tensor, returns = synthetic_data
 
@@ -715,9 +739,7 @@ class TestSessionPersistence:
         loop2.load_session(checkpoint_path)
         assert loop2.iteration == loop1.iteration
 
-    def test_load_restores_memory(
-        self, test_config, synthetic_data, mock_provider, tmp_dir
-    ):
+    def test_load_restores_memory(self, test_config, synthetic_data, mock_provider, tmp_dir):
         test_config.output_dir = tmp_dir
         data_tensor, returns = synthetic_data
 
@@ -745,12 +767,11 @@ class TestSessionPersistence:
 # Checkpoint / Resume tests (Phase 1f)
 # ===========================================================================
 
+
 class TestCheckpointResume:
     """Tests for the checkpoint/resume functionality."""
 
-    def test_checkpoint_creates_files(
-        self, test_config, synthetic_data, mock_provider, tmp_dir
-    ):
+    def test_checkpoint_creates_files(self, test_config, synthetic_data, mock_provider, tmp_dir):
         """Verify that save_session creates all expected checkpoint files."""
         test_config.output_dir = tmp_dir
         data_tensor, returns = synthetic_data
@@ -817,9 +838,7 @@ class TestCheckpointResume:
         assert loop2.iteration > saved_iteration
         assert loop2.iteration <= 4
 
-    def test_resume_preserves_library(
-        self, test_config, synthetic_data, mock_provider, tmp_dir
-    ):
+    def test_resume_preserves_library(self, test_config, synthetic_data, mock_provider, tmp_dir):
         """Verify that library factors are preserved across resume."""
         test_config.output_dir = tmp_dir
         test_config.ic_threshold = 0.0001
@@ -834,9 +853,7 @@ class TestCheckpointResume:
             llm_provider=mock_provider,
         )
         loop1.run(max_iterations=3, target_size=100)
-        saved_factors = {
-            fid: f.to_dict() for fid, f in loop1.library.factors.items()
-        }
+        saved_factors = {fid: f.to_dict() for fid, f in loop1.library.factors.items()}
         saved_size = loop1.library.size
         loop1.save_session()
 
@@ -859,9 +876,7 @@ class TestCheckpointResume:
             assert restored["formula"] == f_dict["formula"]
             assert restored["ic_mean"] == pytest.approx(f_dict["ic_mean"])
 
-    def test_resume_preserves_memory(
-        self, test_config, synthetic_data, mock_provider, tmp_dir
-    ):
+    def test_resume_preserves_memory(self, test_config, synthetic_data, mock_provider, tmp_dir):
         """Verify that experience memory is preserved across resume."""
         test_config.output_dir = tmp_dir
         data_tensor, returns = synthetic_data
@@ -925,9 +940,7 @@ class TestCheckpointResume:
         # divisible by 2, the checkpoint at iter 2 is the latest one)
         assert state["iteration"] == 2
 
-    def test_checkpoint_disabled(
-        self, test_config, synthetic_data, mock_provider, tmp_dir
-    ):
+    def test_checkpoint_disabled(self, test_config, synthetic_data, mock_provider, tmp_dir):
         """Verify checkpoint_interval=0 disables automatic checkpointing."""
         test_config.output_dir = tmp_dir
         data_tensor, returns = synthetic_data
@@ -945,9 +958,7 @@ class TestCheckpointResume:
         # No automatic checkpoint should have been created
         assert not checkpoint_dir.exists()
 
-    def test_resume_from_classmethod(
-        self, test_config, synthetic_data, mock_provider, tmp_dir
-    ):
+    def test_resume_from_classmethod(self, test_config, synthetic_data, mock_provider, tmp_dir):
         """Verify the resume_from classmethod works correctly."""
         test_config.output_dir = tmp_dir
         data_tensor, returns = synthetic_data
@@ -974,9 +985,7 @@ class TestCheckpointResume:
         assert loop2.iteration == loop1.iteration
         assert loop2.library.size == loop1.library.size
 
-    def test_resume_restores_budget(
-        self, test_config, synthetic_data, mock_provider, tmp_dir
-    ):
+    def test_resume_restores_budget(self, test_config, synthetic_data, mock_provider, tmp_dir):
         """Verify that budget tracker state is preserved across resume."""
         test_config.output_dir = tmp_dir
         data_tensor, returns = synthetic_data
@@ -1002,9 +1011,7 @@ class TestCheckpointResume:
         loop2.load_session(checkpoint_dir)
 
         assert loop2.budget.llm_calls == saved_llm_calls
-        assert loop2.budget.compute_seconds == pytest.approx(
-            saved_compute, abs=0.1
-        )
+        assert loop2.budget.compute_seconds == pytest.approx(saved_compute, abs=0.1)
 
     def test_backward_compatible_no_checkpoint(
         self, test_config, synthetic_data, mock_provider, tmp_dir
