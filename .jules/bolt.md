@@ -1,0 +1,3 @@
+## 2025-03-02 - Optimize PyTorch and Numpy Time Series Operators
+**Learning:** In PyTorch, using boolean slice assignment (e.g. `out[mask] = x[mask]`) inside a loop causes a significant performance hit due to implicit CPU-GPU synchronization. In sequential algorithms like EMA/KAMA where loops are required, this synchronization overhead adds up quickly. Furthermore, `np.nansum` and `diff` should be pulled outside of the loops using `cumsum` to avoid recomputation overhead.
+**Action:** Always replace in-loop boolean slice assignment with branchless `torch.where(mask, new_value, out)` for sequential algorithms in PyTorch to avoid CPU-GPU sync. Additionally, pre-calculate rolling window sums outside loops using the padding + `cumsum` pattern.
