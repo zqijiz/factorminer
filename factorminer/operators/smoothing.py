@@ -47,10 +47,15 @@ def ema_np(x: np.ndarray, window: int = 10) -> np.ndarray:
     for t in range(1, T):
         prev = out[:, t - 1]
         curr = x[:, t]
-        both_valid = ~np.isnan(prev) & ~np.isnan(curr)
-        only_prev = ~np.isnan(prev) & np.isnan(curr)
-        out[both_valid, t] = alpha * curr[both_valid] + (1 - alpha) * prev[both_valid]
-        out[only_prev, t] = prev[only_prev]
+        curr_valid = ~np.isnan(curr)
+        prev_valid = ~np.isnan(prev)
+
+        both_valid = prev_valid & curr_valid
+        only_prev = prev_valid & ~curr_valid
+
+        # Branchless assignment avoids intermediate slice creation
+        out[:, t] = np.where(both_valid, alpha * curr + (1 - alpha) * prev,
+                             np.where(only_prev, prev, out[:, t]))
     return out
 
 
@@ -118,10 +123,15 @@ def ema_torch(x: torch.Tensor, window: int = 10) -> torch.Tensor:
     for t in range(1, T):
         prev = out[:, t - 1]
         curr = x[:, t]
-        both = ~torch.isnan(prev) & ~torch.isnan(curr)
-        only_prev = ~torch.isnan(prev) & torch.isnan(curr)
-        out[both, t] = alpha * curr[both] + (1 - alpha) * prev[both]
-        out[only_prev, t] = prev[only_prev]
+        curr_valid = ~torch.isnan(curr)
+        prev_valid = ~torch.isnan(prev)
+
+        both_valid = prev_valid & curr_valid
+        only_prev = prev_valid & ~curr_valid
+
+        # Branchless assignment reduces CPU-GPU sync overhead
+        out[:, t] = torch.where(both_valid, alpha * curr + (1 - alpha) * prev,
+                                torch.where(only_prev, prev, out[:, t]))
     return out
 
 
