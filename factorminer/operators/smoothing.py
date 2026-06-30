@@ -18,6 +18,7 @@ except ImportError:
 # NumPy implementations
 # ===========================================================================
 
+
 def sma_np(x: np.ndarray, window: int = 10) -> np.ndarray:
     """Simple moving average (identical to Mean)."""
     window = int(window)
@@ -25,16 +26,19 @@ def sma_np(x: np.ndarray, window: int = 10) -> np.ndarray:
     out = np.full_like(x, np.nan, dtype=np.float64)
     # Cumsum trick for O(1) per element
     cs = np.nancumsum(x, axis=1)
-    out[:, window - 1:] = cs[:, window - 1:]
+    out[:, window - 1 :] = cs[:, window - 1 :]
     if window > 1:
-        out[:, window - 1:] -= np.concatenate(
+        out[:, window - 1 :] -= np.concatenate(
             [np.zeros((M, 1), dtype=np.float64), cs[:, :-window]], axis=1
-        )[:, :T - window + 1]  # fix: just subtract shifted cumsum
-        out[:, window - 1:] = (cs[:, window - 1:] - np.concatenate(
-            [np.zeros((M, 1), dtype=np.float64), cs[:, :-1]], axis=1
-        )[:, :T - window + 1])
-    out[:, window - 1:] /= window
-    out[:, :window - 1] = np.nan
+        )[:, : T - window + 1]  # fix: just subtract shifted cumsum
+        out[:, window - 1 :] = (
+            cs[:, window - 1 :]
+            - np.concatenate([np.zeros((M, 1), dtype=np.float64), cs[:, :-1]], axis=1)[
+                :, : T - window + 1
+            ]
+        )
+    out[:, window - 1 :] /= window
+    out[:, : window - 1] = np.nan
     return out
 
 
@@ -69,16 +73,33 @@ def kama_np(x: np.ndarray, window: int = 10) -> np.ndarray:
     M, T = x.shape
     out = np.copy(x).astype(np.float64)
 
+    if T <= window:
+        return out
+
+    # ⚡ Bolt: Precalculate diffs and cumsum outside the loop to avoid
+    # recomputing diff and nansum slices for every time step.
+    # diff(axis=1) replaces NaN with 0 for cumulative sum to avoid NaN propagation
+    abs_diffs = np.abs(np.diff(x, axis=1))
+    abs_diffs = np.nan_to_num(abs_diffs, nan=0.0)
+
+    # ⚡ Bolt: Cumsum trick for O(1) rolling sum
+    cs = np.concatenate([np.zeros((M, 1), dtype=np.float64), np.cumsum(abs_diffs, axis=1)], axis=1)
+
     for t in range(window, T):
         direction = np.abs(x[:, t] - x[:, t - window])
-        volatility = np.nansum(np.abs(np.diff(x[:, t - window:t + 1], axis=1)), axis=1)
+        # ⚡ Bolt: Use precomputed rolling sum instead of np.nansum on a slice
+        volatility = cs[:, t] - cs[:, t - window]
+
         with np.errstate(invalid="ignore", divide="ignore"):
             er = np.where(volatility > 1e-10, direction / volatility, 0.0)
         sc = (er * (fast_sc - slow_sc) + slow_sc) ** 2
+
         prev = out[:, t - 1]
         curr = x[:, t]
         valid = ~np.isnan(prev) & ~np.isnan(curr)
-        out[valid, t] = prev[valid] + sc[valid] * (curr[valid] - prev[valid])
+        # ⚡ Bolt: Use np.where to avoid expensive boolean slice indexing assignment
+        out[:, t] = np.where(valid, prev + sc * (curr - prev), out[:, t])
+
     return out
 
 
@@ -86,6 +107,7 @@ def hma_np(x: np.ndarray, window: int = 10) -> np.ndarray:
     """Hull Moving Average: WMA(2*WMA(x, w/2) - WMA(x, w), sqrt(w))."""
     window = int(window)
     from factorminer.operators.timeseries import wma_np
+
     half = max(int(window / 2), 1)
     sqrt_w = max(int(np.sqrt(window)), 1)
     w1 = wma_np(x, half)
@@ -98,12 +120,14 @@ def hma_np(x: np.ndarray, window: int = 10) -> np.ndarray:
 # PyTorch implementations
 # ===========================================================================
 
+
 def sma_torch(x: torch.Tensor, window: int = 10) -> torch.Tensor:
     """Simple moving average using conv1d for GPU efficiency."""
     window = int(window)
     M, T = x.shape
     # Use unfold-based approach
     from factorminer.operators.statistical import _pad_front_torch, _unfold_torch
+
     w = _unfold_torch(x, window)
     result = w.nanmean(dim=2)
     return _pad_front_torch(result, window, T)
@@ -137,23 +161,41 @@ def kama_torch(x: torch.Tensor, window: int = 10) -> torch.Tensor:
     slow_sc = 2.0 / (30.0 + 1.0)
     M, T = x.shape
     out = x.clone()
+
+    if T <= window:
+        return out
+
+    # ⚡ Bolt: Precalculate abs diffs to avoid computing it per time step.
+    abs_diffs = x.diff(dim=1).abs()
+
+    # ⚡ Bolt: Calculate rolling sum in one go using unfold to avoid small kernel
+    # launches and host-device synchronization inside the loop.
+    w = abs_diffs.unfold(dimension=1, size=window, step=1)
+    vol_all = w.nansum(dim=2)
+
     for t in range(window, T):
         direction = (x[:, t] - x[:, t - window]).abs()
-        vol = x[:, t - window:t + 1].diff(dim=1).abs().nansum(dim=1)
+        # ⚡ Bolt: Fetch precalculated volatility from the unfolded rolling sum
+        vol = vol_all[:, t - window]
+
         er = torch.where(vol > 1e-10, direction / vol, torch.zeros_like(direction))
         sc = (er * (fast_sc - slow_sc) + slow_sc) ** 2
+
         prev = out[:, t - 1]
         curr = x[:, t]
         valid = ~torch.isnan(prev) & ~torch.isnan(curr)
-        out[valid, t] = prev[valid] + sc[valid] * (curr[valid] - prev[valid])
+        # ⚡ Bolt: Replace boolean indexing assignment with torch.where
+        out[:, t] = torch.where(valid, prev + sc * (curr - prev), out[:, t])
+
     return out
 
 
 def hma_torch(x: torch.Tensor, window: int = 10) -> torch.Tensor:
     window = int(window)
     from factorminer.operators.timeseries import wma_torch
+
     half = max(int(window / 2), 1)
-    sqrt_w = max(int(window ** 0.5), 1)
+    sqrt_w = max(int(window**0.5), 1)
     w1 = wma_torch(x, half)
     w2 = wma_torch(x, window)
     diff = 2.0 * w1 - w2
