@@ -1,0 +1,3 @@
+## 2024-06-05 - Cross-Sectional Operations Optimization
+**Learning:** Performance of sequential slice operations inside a time loop can be optimized by using `np.divide` with `out` and `where` arguments to avoid creating temporary array allocations. Avoid unnecessary type castings (`astype`) inside tight loops if division handles type conversions implicitly. Finally, replacing float conversions and `np.floor` with integer division `//` in index binning (quantiles) offers both speed and accuracy benefits.
+**Action:** Use `np.divide(a, b, out=out, where=mask)` instead of `np.where(mask, a / b, fill)` in tight loops. Use integer division `//` for binning algorithms instead of `np.floor(a / b * n)`.
