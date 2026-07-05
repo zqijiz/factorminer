@@ -18,6 +18,7 @@ except ImportError:
 # NumPy implementations
 # ===========================================================================
 
+
 def cs_rank_np(x: np.ndarray) -> np.ndarray:
     """Cross-sectional percentile rank -- key GPU target (26x speedup).
 
@@ -31,7 +32,7 @@ def cs_rank_np(x: np.ndarray) -> np.ndarray:
         n = valid.sum()
         if n < 2:
             continue
-        order = col[valid].argsort().argsort().astype(np.float64)
+        order = col[valid].argsort().argsort()
         out[valid, t] = order / (n - 1)
     return out
 
@@ -40,8 +41,9 @@ def cs_zscore_np(x: np.ndarray) -> np.ndarray:
     """Cross-sectional z-score."""
     m = np.nanmean(x, axis=0, keepdims=True)
     s = np.nanstd(x, axis=0, keepdims=True, ddof=0)
-    with np.errstate(invalid="ignore", divide="ignore"):
-        return np.where(s > 1e-10, (x - m) / s, np.nan)
+    out = np.full_like(x, np.nan, dtype=np.float64)
+    np.divide(x - m, s, out=out, where=s > 1e-10)
+    return out
 
 
 def cs_demean_np(x: np.ndarray) -> np.ndarray:
@@ -52,8 +54,9 @@ def cs_demean_np(x: np.ndarray) -> np.ndarray:
 def cs_scale_np(x: np.ndarray) -> np.ndarray:
     """Scale to unit L1 norm cross-sectionally."""
     l1 = np.nansum(np.abs(x), axis=0, keepdims=True)
-    with np.errstate(invalid="ignore", divide="ignore"):
-        return np.where(l1 > 1e-10, x / l1, np.nan)
+    out = np.full_like(x, np.nan, dtype=np.float64)
+    np.divide(x, l1, out=out, where=l1 > 1e-10)
+    return out
 
 
 def cs_neutralize_np(x: np.ndarray) -> np.ndarray:
@@ -72,14 +75,15 @@ def cs_quantile_np(x: np.ndarray, n_bins: int = 5) -> np.ndarray:
         n = valid.sum()
         if n < 2:
             continue
-        order = col[valid].argsort().argsort().astype(np.float64)
-        out[valid, t] = np.floor(order / n * n_bins).clip(0, n_bins - 1)
+        order = col[valid].argsort().argsort()
+        out[valid, t] = np.minimum((order * n_bins) // n, n_bins - 1)
     return out
 
 
 # ===========================================================================
 # PyTorch implementations
 # ===========================================================================
+
 
 def cs_rank_torch(x: torch.Tensor) -> torch.Tensor:
     """Cross-sectional percentile rank -- fully vectorized for GPU."""
