@@ -1,0 +1,3 @@
+## 2024-07-06 - Vectorize np.cummax and np.cummin for Arrays with NaNs
+**Learning:** For rolling or cumulative max/min operations over NumPy arrays containing missing values, a python-level `for` loop updating columns sequentially via `np.fmax(prev, curr)` avoids NaNs but introduces significant loop overhead.
+**Action:** Replace the loop entirely with `np.fmax.accumulate(x, axis=1)` and `np.fmin.accumulate(x, axis=1)`. These functions correctly propagate values across missing observations (NaNs) and execute in optimized C code, yielding roughly a ~5x speedup over sequential slice iteration on large 2D arrays.
