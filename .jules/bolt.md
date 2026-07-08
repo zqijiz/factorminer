@@ -1,0 +1,1 @@
+## 2026-07-08 - Optimize safe division\n**Learning:** In NumPy, replacing nested `np.where` with `np.divide` along with `where` argument is faster and avoids intermediate array allocations.\n**Action:** Use `np.divide(a, b, out=out, where=mask)` instead of `np.where(mask, a / np.where(mask, b, 1.0), 0.0)`.
